@@ -21,7 +21,6 @@
             font-family: Arial, sans-serif;
         }
 
-        /* Use the star background pattern as pseudo-element */
         body::before {
             content: "";
             position: fixed;
@@ -136,7 +135,6 @@
             margin: 5px;
         }
 
-        /* Hidden admin elements */
         .admin-btn {
             position: fixed;
             top: 10px;
@@ -200,58 +198,6 @@
             font-size: 14px;
         }
 
-        .view-items-btn {
-            background: #007AFF !important;
-        }
-
-        .clear-data-btn {
-            background: #ff4444 !important;
-            margin-top: 10px;
-        }
-
-        .item-card {
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 10px;
-            margin: 5px 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .item-card img {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            border-radius: 3px;
-        }
-
-        .item-info {
-            flex: 1;
-            font-size: 12px;
-        }
-
-        .item-actions {
-            display: flex;
-            gap: 5px;
-        }
-
-        .item-actions button {
-            padding: 5px 8px;
-            font-size: 11px;
-            margin: 0;
-            width: auto;
-        }
-
-        .edit-btn {
-            background: #007AFF !important;
-        }
-
-        .delete-btn {
-            background: #ff4444 !important;
-        }
-
         .upload-status {
             margin: 10px 0;
             padding: 10px;
@@ -271,6 +217,16 @@
             border: 1px solid #f5c6cb;
         }
 
+        .debug-info {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-size: 12px;
+            color: #0066cc;
+        }
+
         @media (max-width: 480px) {
             .letter-block {
                 width: 36px;
@@ -286,7 +242,6 @@
     </style>
 </head>
 <body>
-    <!-- Hidden admin button - only appears after secret clicks -->
     <button class="admin-btn" id="adminBtn" onclick="toggleAdmin()">Admin</button>
 
     <div class="container">
@@ -312,9 +267,8 @@
             </div>
         </div>
 
-        <!-- Hidden admin panel -->
         <div class="admin-panel" id="adminPanel">
-            <h3>Add Item (Cloudinary)</h3>
+            <h3>Add Item</h3>
             <input type="file" id="fileInput" accept="image/*">
             <select id="categoryInput">
                 <option value="">Select Category</option>
@@ -331,11 +285,7 @@
             <button onclick="addItem()">Upload Item</button>
             <p>Items available: <span id="itemCount">0</span></p>
             
-            <hr style="margin: 20px 0; border: 1px solid #ccc;">
-            
-            <h3>Manage Items</h3>
-            <button class="view-items-btn" onclick="showItemList()">View All Items</button>
-            <div id="itemList" style="display: none; max-height: 300px; overflow-y: auto; margin-top: 10px;"></div>
+            <div id="debugInfo" class="debug-info" style="display: none;"></div>
         </div>
 
         <div class="canvas-container" id="outfitCanvas">
@@ -343,111 +293,57 @@
         </div>
 
         <button class="generate-btn" onclick="generateOutfit()">G̾e̾n̾e̾r̾a̾t̾e̾</button>
-        
         <button class="save-btn" onclick="saveOutfit()">Save Outfit Image</button>
     </div>
 
     <script>
-        // Cloudinary Configuration
-        const CLOUD_NAME = 'dpykewcjw';
-        const UPLOAD_PRESET = 'Outfitgenerator';
-
-        // Global items array - this will hold all clothing items
+        // Simple item database - this will be populated with your Cloudinary items
         let items = [];
         let clickCount = 0;
         let lastClickTime = 0;
 
+        // Known uploaded items (manually maintained list)
+        // When you upload items, I'll help you add them here
+        const CLOUDINARY_ITEMS = [
+            // Add your uploaded items here like this:
+            // {
+            //     id: 'outfit-generator/your-item-id',
+            //     category: 'tops',
+            //     link: 'https://depop.com/...',
+            //     url: 'https://res.cloudinary.com/dpykewcjw/image/upload/w_400,h_400,c_fit/outfit-generator/your-item-id.jpg'
+            // }
+        ];
+
         // Load items when page loads
-        window.addEventListener('load', loadAllItems);
+        window.addEventListener('load', function() {
+            loadItems();
+            showDebugInfo('Page loaded, checking for items...');
+        });
 
-        // Load all items from Cloudinary automatically
-        async function loadAllItems() {
+        function loadItems() {
+            // Start with the manually maintained list
+            items = [...CLOUDINARY_ITEMS];
+            
+            // Also check localStorage for recently uploaded items
             try {
-                // Try multiple methods to get your uploaded items
-                
-                // Method 1: Check if items are tagged with 'outfit'
-                const tagResponse = await fetch(`https://res.cloudinary.com/${CLOUD_NAME}/image/list/outfit.json`)
-                    .catch(() => null);
-                
-                if (tagResponse && tagResponse.ok) {
-                    const tagData = await tagResponse.json();
-                    if (tagData.resources && tagData.resources.length > 0) {
-                        console.log('Found items with outfit tag:', tagData.resources.length);
-                        processCloudinaryItems(tagData.resources);
-                        return;
-                    }
+                const stored = localStorage.getItem('recentItems');
+                if (stored) {
+                    const recentItems = JSON.parse(stored);
+                    // Merge recent items with existing items (avoid duplicates)
+                    recentItems.forEach(item => {
+                        if (!items.find(existing => existing.id === item.id)) {
+                            items.push(item);
+                        }
+                    });
                 }
-
-                // Method 2: Try to get from folder
-                const folderResponse = await fetch(`https://res.cloudinary.com/${CLOUD_NAME}/image/list/outfit-generator.json`)
-                    .catch(() => null);
-                
-                if (folderResponse && folderResponse.ok) {
-                    const folderData = await folderResponse.json();
-                    if (folderData.resources && folderData.resources.length > 0) {
-                        console.log('Found items in folder:', folderData.resources.length);
-                        processCloudinaryItems(folderData.resources);
-                        return;
-                    }
-                }
-
-                // Method 3: Manual item list (fallback - you can add known public IDs here)
-                loadManualItems();
-
-            } catch (error) {
-                console.log('Loading from Cloudinary failed, using manual list');
-                loadManualItems();
+            } catch (e) {
+                console.log('No recent items found');
             }
-        }
-
-        // Process items from Cloudinary response
-        function processCloudinaryItems(resources) {
-            items = resources.map(resource => {
-                // Extract category from tags or context
-                let category = 'uncategorized';
-                let link = null;
-                
-                // Try to get category from tags (exclude 'outfit' tag)
-                if (resource.tags) {
-                    const categoryTag = resource.tags.find(tag => tag !== 'outfit');
-                    if (categoryTag) category = categoryTag;
-                }
-                
-                // Try to get link from context
-                if (resource.context && resource.context.link) {
-                    link = resource.context.link;
-                }
-
-                return {
-                    id: resource.public_id,
-                    category: category,
-                    link: link,
-                    url: `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_400,h_400,c_fit/${resource.public_id}.jpg`,
-                    uploadDate: resource.created_at
-                };
-            });
             
             updateItemCount();
-            console.log(`Loaded ${items.length} items from Cloudinary`);
+            showDebugInfo(`Loaded ${items.length} items total`);
         }
 
-        // Manual fallback - add any known items here
-        function loadManualItems() {
-            // You can manually add items here if needed
-            // Example:
-            // items = [
-            //     {
-            //         id: 'known-item-id',
-            //         category: 'tops',
-            //         link: 'https://example.com',
-            //         url: `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_400,h_400,c_fit/known-item-id.jpg`
-            //     }
-            // ];
-            
-            updateItemCount();
-        }
-
-        // Upload new item to Cloudinary
         async function addItem() {
             const file = document.getElementById('fileInput').files[0];
             const category = document.getElementById('categoryInput').value;
@@ -464,23 +360,19 @@
             }
 
             showUploadStatus('Uploading to Cloudinary...', 'success');
+            showDebugInfo('Starting upload...');
 
             try {
                 const formData = new FormData();
                 formData.append('file', file);
-                formData.append('upload_preset', UPLOAD_PRESET);
+                formData.append('upload_preset', 'Outfitgenerator');
                 formData.append('folder', 'outfit-generator');
                 
-                // Add category as tag AND context
+                // Add tags for easy identification
                 formData.append('tags', `outfit,${category}`);
-                if (link) {
-                    formData.append('context', `category=${category}|link=${link}`);
-                } else {
-                    formData.append('context', `category=${category}`);
-                }
 
                 const response = await fetch(
-                    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+                    'https://api.cloudinary.com/v1_1/dpykewcjw/image/upload',
                     {
                         method: 'POST',
                         body: formData
@@ -489,33 +381,43 @@
 
                 if (response.ok) {
                     const result = await response.json();
+                    showDebugInfo(`Upload successful! Public ID: ${result.public_id}`);
                     
-                    // Add to local items array immediately
+                    // Create new item
                     const newItem = {
                         id: result.public_id,
                         category: category,
                         link: link || null,
-                        url: `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_400,h_400,c_fit/${result.public_id}.jpg`,
-                        uploadDate: result.created_at
+                        url: `https://res.cloudinary.com/dpykewcjw/image/upload/w_400,h_400,c_fit/${result.public_id}.jpg`
                     };
                     
+                    // Add to current items array
                     items.push(newItem);
-                    updateItemCount();
                     
-                    // Save to localStorage immediately
-                    saveToLocalStorage();
+                    // Save to localStorage for persistence
+                    saveRecentItem(newItem);
+                    
+                    updateItemCount();
                     
                     // Clear form
                     document.getElementById('fileInput').value = '';
                     document.getElementById('categoryInput').value = '';
                     document.getElementById('linkInput').value = '';
                     
-                    // Refresh item list if shown
-                    if (document.getElementById('itemList').style.display !== 'none') {
-                        displayItemList();
-                    }
+                    showUploadStatus('Item uploaded successfully! It will now appear in outfit rotations.', 'success');
                     
-                    showUploadStatus('Item uploaded successfully!', 'success');
+                    // Show the exact URL for manual addition to the database
+                    showDebugInfo(`
+                        Item uploaded! 
+                        Public ID: ${result.public_id}
+                        Add this to CLOUDINARY_ITEMS array:
+                        {
+                            id: '${result.public_id}',
+                            category: '${category}',
+                            link: ${link ? `'${link}'` : 'null'},
+                            url: '${newItem.url}'
+                        }
+                    `);
                     
                 } else {
                     const error = await response.json();
@@ -525,15 +427,37 @@
             } catch (error) {
                 console.error('Upload error:', error);
                 showUploadStatus(`Upload failed: ${error.message}`, 'error');
+                showDebugInfo(`Upload failed: ${error.message}`);
             }
         }
 
-        // Generate outfit from available items
+        function saveRecentItem(item) {
+            try {
+                let recentItems = [];
+                const stored = localStorage.getItem('recentItems');
+                if (stored) {
+                    recentItems = JSON.parse(stored);
+                }
+                
+                // Add new item and keep only last 50 items
+                recentItems.push(item);
+                if (recentItems.length > 50) {
+                    recentItems = recentItems.slice(-50);
+                }
+                
+                localStorage.setItem('recentItems', JSON.stringify(recentItems));
+            } catch (e) {
+                console.log('Failed to save to localStorage:', e);
+            }
+        }
+
         function generateOutfit() {
             if (items.length === 0) {
                 alert('No items available! Upload some clothing items first.');
                 return;
             }
+
+            showDebugInfo(`Generating outfit from ${items.length} available items...`);
 
             const canvas = document.getElementById('outfitCanvas');
             canvas.innerHTML = '';
@@ -548,6 +472,8 @@
                 boots: { bottom: '25px', left: '50%', transform: 'translateX(-50%)', width: '140px', height: '100px', zIndex: '1' }
             };
 
+            let itemsUsed = 0;
+
             // Random choice for dress vs separates
             let dressGenerated = false;
             const dressItems = items.filter(item => item.category === 'dresses');
@@ -556,6 +482,7 @@
                 const randomDress = dressItems[Math.floor(Math.random() * dressItems.length)];
                 addClothingSpot(canvas, randomDress, positions['dresses']);
                 dressGenerated = true;
+                itemsUsed++;
             }
 
             // Generate other items (skip tops/bottoms if dress generated)
@@ -567,6 +494,7 @@
                 if (categoryItems.length > 0) {
                     const randomItem = categoryItems[Math.floor(Math.random() * categoryItems.length)];
                     addClothingSpot(canvas, randomItem, positions[category]);
+                    itemsUsed++;
                 }
             });
 
@@ -580,11 +508,13 @@
                 const hideElement = canvas.querySelector(`[alt="${hideCategory}"]`);
                 if (hideElement && hideElement.parentNode) {
                     hideElement.parentNode.remove();
+                    itemsUsed--;
                 }
             }
+
+            showDebugInfo(`Outfit generated using ${itemsUsed} items`);
         }
 
-        // Add clothing item to canvas
         function addClothingSpot(canvas, item, position) {
             const div = document.createElement('div');
             div.className = 'clothing-spot';
@@ -608,7 +538,6 @@
             canvas.appendChild(div);
         }
 
-        // Utility functions
         function updateItemCount() {
             document.getElementById('itemCount').textContent = items.length;
         }
@@ -624,6 +553,13 @@
             }, 5000);
         }
 
+        function showDebugInfo(message) {
+            const debugDiv = document.getElementById('debugInfo');
+            debugDiv.textContent = message;
+            debugDiv.style.display = 'block';
+            console.log('Debug:', message);
+        }
+
         function isValidURL(string) {
             try {
                 new URL(string);
@@ -633,7 +569,6 @@
             }
         }
 
-        // Admin panel functions
         function secretClick() {
             const now = Date.now();
             
@@ -661,44 +596,6 @@
                 panel.classList.add('show');
                 btn.textContent = 'Hide';
                 updateItemCount();
-            }
-        }
-
-        function showItemList() {
-            const listDiv = document.getElementById('itemList');
-            const btn = document.querySelector('.view-items-btn');
-            
-            if (listDiv.style.display === 'none') {
-                displayItemList();
-                listDiv.style.display = 'block';
-                btn.textContent = 'Hide Items';
-            } else {
-                listDiv.style.display = 'none';
-                btn.textContent = 'View All Items';
-            }
-        }
-
-        function displayItemList() {
-            const listDiv = document.getElementById('itemList');
-            
-            if (items.length === 0) {
-                listDiv.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No items yet</p>';
-            } else {
-                let html = '';
-                items.forEach((item, index) => {
-                    const uploadDate = item.uploadDate ? new Date(item.uploadDate).toLocaleDateString() : 'Unknown';
-                    html += `
-                        <div class="item-card" data-index="${index}">
-                            <img src="${item.url}" alt="${item.category}">
-                            <div class="item-info">
-                                <strong>${item.category.charAt(0).toUpperCase() + item.category.slice(1)}</strong><br>
-                                <small>Added: ${uploadDate}</small><br>
-                                ${item.link ? `<a href="${item.link}" target="_blank" style="font-size: 10px; color: #007AFF;">View Link</a>` : '<span style="font-size: 10px; color: #999;">No link</span>'}
-                            </div>
-                        </div>
-                    `;
-                });
-                listDiv.innerHTML = html;
             }
         }
 
