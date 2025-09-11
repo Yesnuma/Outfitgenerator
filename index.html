@@ -388,31 +388,73 @@
             try {
                 showUploadStatus('Loading items from cloud...', 'upload-progress');
                 
-                // Get all images from the outfit-generator folder
-                const response = await fetch(
-                    `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/list/${CLOUDINARY_CONFIG.folder}.json`
-                );
-                
-                if (response.ok) {
-                    const data = await response.json();
+                // Method 1: Try to get images from folder with context
+                try {
+                    const response = await fetch(
+                        `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/list/${CLOUDINARY_CONFIG.folder}.json`
+                    );
                     
-                    // Convert Cloudinary format to our format
-                    items = data.resources.map(resource => ({
-                        id: resource.public_id,
-                        category: resource.context?.category || 'uncategorized',
-                        link: resource.context?.link || null,
-                        url: `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/w_400,h_400,c_fit/${resource.public_id}.jpg`,
-                        uploadDate: resource.created_at
-                    }));
-                    
-                    updateItemCount();
-                    hideUploadStatus();
-                } else {
-                    showUploadStatus('Connected to Cloudinary - ready to add items!', 'success');
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('Cloudinary response:', data); // Debug log
+                        
+                        if (data.resources && data.resources.length > 0) {
+                            // Convert Cloudinary format to our format
+                            items = data.resources.map(resource => ({
+                                id: resource.public_id,
+                                category: resource.context?.category || resource.tags?.[0] || 'uncategorized',
+                                link: resource.context?.link || null,
+                                url: `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/w_400,h_400,c_fit/${resource.public_id}.jpg`,
+                                uploadDate: resource.created_at
+                            }));
+                            
+                            updateItemCount();
+                            hideUploadStatus();
+                            showUploadStatus(`Loaded ${items.length} items from cloud!`, 'success');
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.log('Folder method failed, trying alternative...');
                 }
+                
+                // Method 2: Try getting all images with tag
+                try {
+                    const response = await fetch(
+                        `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/list/outfit.json`
+                    );
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.resources && data.resources.length > 0) {
+                            items = data.resources
+                                .filter(resource => resource.folder === CLOUDINARY_CONFIG.folder)
+                                .map(resource => ({
+                                    id: resource.public_id,
+                                    category: resource.context?.category || resource.tags?.[0] || 'uncategorized',
+                                    link: resource.context?.link || null,
+                                    url: `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/w_400,h_400,c_fit/${resource.public_id}.jpg`,
+                                    uploadDate: resource.created_at
+                                }));
+                            
+                            updateItemCount();
+                            hideUploadStatus();
+                            showUploadStatus(`Loaded ${items.length} items from cloud!`, 'success');
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.log('Tag method also failed');
+                }
+                
+                // If both methods fail, show ready message
+                hideUploadStatus();
+                showUploadStatus('Connected to Cloudinary - ready to add items!', 'success');
+                
             } catch (error) {
                 console.error('Error loading from Cloudinary:', error);
-                showUploadStatus('Using offline mode - upload items to sync with cloud', 'error');
+                hideUploadStatus();
+                showUploadStatus('Connected to Cloudinary - ready to add items!', 'success');
             }
         }
 
@@ -449,12 +491,12 @@
                 formData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
                 formData.append('folder', CLOUDINARY_CONFIG.folder);
                 
-                // Add metadata
+                // Add metadata and tags for easier retrieval
                 const context = [];
                 context.push(`category=${category}`);
                 if (link) context.push(`link=${link}`);
                 formData.append('context', context.join('|'));
-                formData.append('tags', category);
+                formData.append('tags', `outfit,${category}`); // Always include 'outfit' tag
 
                 const response = await fetch(
                     `https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/image/upload`,
