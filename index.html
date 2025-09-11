@@ -21,6 +21,7 @@
             font-family: Arial, sans-serif;
         }
 
+        /* Star background pattern */
         body::before {
             content: "";
             position: fixed;
@@ -43,12 +44,16 @@
             min-height: 100vh;
             position: relative;
             z-index: 1;
+            width: 100%;
+            max-width: 500px;
         }
 
         .title {
             margin-bottom: 30px;
             cursor: pointer;
             user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
         }
 
         .title-row {
@@ -160,6 +165,7 @@
             background: #f0f0f0;
             padding: 20px;
             margin: 20px auto;
+            width: 100%;
             max-width: 400px;
             border-radius: 10px;
             border: 2px solid #000000;
@@ -171,30 +177,41 @@
 
         .admin-panel input, .admin-panel select, .admin-panel button {
             width: 100%;
-            padding: 10px;
-            margin: 5px 0;
+            padding: 12px;
+            margin: 8px 0;
             border: 1px solid #ccc;
             border-radius: 5px;
             box-sizing: border-box;
-            font-size: 14px;
+            font-size: 16px; /* Prevents zoom on mobile */
         }
 
         .admin-panel button {
             background: #333;
             color: white;
             cursor: pointer;
+            font-weight: bold;
         }
 
         .admin-panel h3 {
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             color: #333;
+            text-align: center;
+        }
+
+        .admin-panel p {
+            margin: 10px 0 5px 0;
+            color: #666;
+            font-size: 14px;
+            text-align: center;
         }
 
         .upload-status {
             margin: 10px 0;
-            padding: 10px;
+            padding: 12px;
             border-radius: 5px;
             font-size: 14px;
+            text-align: center;
+            font-weight: bold;
         }
 
         .upload-status.success {
@@ -209,7 +226,7 @@
             border: 1px solid #f5c6cb;
         }
 
-        .info-box {
+        .setup-box {
             background: #e7f3ff;
             border: 1px solid #b3d9ff;
             padding: 15px;
@@ -248,10 +265,11 @@
         }
 
         .item-actions button {
-            padding: 5px 8px;
-            font-size: 11px;
+            padding: 8px 12px;
+            font-size: 12px;
             margin: 0;
             width: auto;
+            border-radius: 3px;
         }
 
         .edit-btn {
@@ -264,6 +282,34 @@
 
         .manage-btn {
             background: #4CAF50 !important;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .letter-block {
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
+            }
+            
+            .canvas-container {
+                width: 300px;
+                height: 375px;
+            }
+            
+            .admin-panel {
+                margin: 10px;
+                padding: 15px;
+            }
+            
+            .admin-panel input, .admin-panel select, .admin-panel button {
+                padding: 15px; /* Larger touch targets */
+                font-size: 16px;
+            }
         }
     </style>
 </head>
@@ -294,39 +340,48 @@
         </div>
 
         <div class="admin-panel" id="adminPanel">
-            <div class="info-box">
-                <strong>📦 Hybrid Storage System</strong><br>
-                Images: Cloudinary (unlimited, fast)<br>
-                Database: Browser + Manual sync<br>
-                Perfect for daily uploads!
+            <div class="setup-box" id="setupBox" style="display: none;">
+                <strong>📋 One-Time Setup Required</strong><br><br>
+                Create a GitHub repository to store your item database:<br><br>
+                1. Go to <a href="https://github.com/new" target="_blank">GitHub.com/new</a><br>
+                2. Name it "outfit-database"<br>
+                3. Make it public<br>
+                4. Create repository<br>
+                5. Enter details below
             </div>
             
-            <h3>Add New Item</h3>
-            <input type="file" id="fileInput" accept="image/*">
-            <select id="categoryInput">
-                <option value="">Select Category</option>
-                <option value="bags">Bags</option>
-                <option value="accessories">Accessories</option>
-                <option value="tops">Tops</option>
-                <option value="dresses">Dresses</option>
-                <option value="bottoms">Bottoms</option>
-                <option value="shoes">Shoes</option>
-                <option value="boots">Boots</option>
-            </select>
-            <input type="url" id="linkInput" placeholder="Shopping link (eBay, Depop, etc.) - Optional">
-            <div id="uploadStatus" class="upload-status" style="display: none;"></div>
-            <button onclick="addItem()">Upload to Cloudinary</button>
-            <p>Items available: <span id="itemCount">0</span></p>
+            <div id="setupForm" style="display: none;">
+                <input type="text" id="githubUser" placeholder="Your GitHub username">
+                <input type="text" id="githubRepo" placeholder="Repository name (outfit-database)">
+                <input type="text" id="githubToken" placeholder="GitHub Personal Access Token">
+                <button onclick="setupGitHub()">Connect GitHub Database</button>
+                <p><a href="https://github.com/settings/personal-access-tokens/new" target="_blank">Create Token Here</a></p>
+            </div>
             
-            <hr style="margin: 15px 0;">
-            
-            <h3>Manage Items</h3>
-            <button class="manage-btn" onclick="toggleItemList()">View & Edit Items</button>
-            <button onclick="exportItems()" style="background: #17a2b8 !important;">Export Item List</button>
-            <button onclick="importItems()" style="background: #ffc107 !important; color: #000;">Import Item List</button>
-            <div id="itemList" style="display: none; max-height: 300px; overflow-y: auto; margin-top: 10px; background: white; border-radius: 5px; padding: 10px;"></div>
-            
-            <textarea id="importArea" placeholder="Paste exported item list here..." style="display: none; height: 100px; margin-top: 10px;"></textarea>
+            <div id="uploadForm">
+                <h3>Add New Item</h3>
+                <input type="file" id="fileInput" accept="image/*">
+                <select id="categoryInput">
+                    <option value="">Select Category</option>
+                    <option value="bags">Bags</option>
+                    <option value="accessories">Accessories</option>
+                    <option value="tops">Tops</option>
+                    <option value="dresses">Dresses</option>
+                    <option value="bottoms">Bottoms</option>
+                    <option value="shoes">Shoes</option>
+                    <option value="boots">Boots</option>
+                </select>
+                <input type="url" id="linkInput" placeholder="Shopping link (eBay, Depop, etc.) - Optional">
+                <div id="uploadStatus" class="upload-status" style="display: none;"></div>
+                <button onclick="addItem()">Upload Item</button>
+                <p>Items available: <span id="itemCount">Loading...</span></p>
+                
+                <hr style="margin: 20px 0; border: 1px solid #ccc;">
+                
+                <h3>Manage Items</h3>
+                <button class="manage-btn" onclick="toggleItemList()">View & Edit Items</button>
+                <div id="itemList" style="display: none; max-height: 300px; overflow-y: auto; margin-top: 10px; background: white; border-radius: 5px; padding: 10px;"></div>
+            </div>
         </div>
 
         <div class="canvas-container" id="outfitCanvas">
@@ -342,55 +397,187 @@
         const CLOUD_NAME = 'dpykewcjw';
         const UPLOAD_PRESET = 'Outfitgenerator';
 
+        // GitHub configuration
+        let GITHUB_USER = '';
+        let GITHUB_REPO = '';
+        let GITHUB_TOKEN = '';
+
         // Global state
-        let items = [
-            // Pre-loaded items will go here - you'll manually sync this
-        ];
+        let items = [];
         let clickCount = 0;
         let lastClickTime = 0;
+        let isSetup = false;
 
         // Initialize when page loads
         window.addEventListener('load', () => {
-            console.log('Page loaded');
-            loadItems();
-            updateItemCount();
+            console.log('🚀 Outfit Generator starting...');
+            checkSetup();
         });
 
-        // Load items from browser storage + pre-loaded list
-        function loadItems() {
-            // Try to load from sessionStorage (temporary for this session)
-            try {
-                const sessionItems = sessionStorage.getItem('sessionItems');
-                if (sessionItems) {
-                    const parsed = JSON.parse(sessionItems);
-                    items = [...items, ...parsed]; // Merge with pre-loaded
-                }
-            } catch (e) {
-                console.log('No session items found');
+        // Check if GitHub is set up
+        function checkSetup() {
+            // Check for saved GitHub credentials
+            GITHUB_USER = localStorage.getItem('github_user');
+            GITHUB_REPO = localStorage.getItem('github_repo');
+            GITHUB_TOKEN = localStorage.getItem('github_token');
+            
+            if (GITHUB_USER && GITHUB_REPO && GITHUB_TOKEN) {
+                isSetup = true;
+                console.log('✅ GitHub database connected');
+                loadItemsFromGitHub();
+            } else {
+                console.log('⚙️ Setup required');
+                showSetupForm();
             }
-            
-            // Remove duplicates based on cloudinaryId
-            items = items.filter((item, index, self) => 
-                index === self.findIndex(t => t.cloudinaryId === item.cloudinaryId)
-            );
-            
-            console.log(`Loaded ${items.length} total items`);
         }
 
-        // Save items to session storage
-        function saveItems() {
+        // Show setup form
+        function showSetupForm() {
+            document.getElementById('setupBox').style.display = 'block';
+            document.getElementById('setupForm').style.display = 'block';
+            document.getElementById('uploadForm').style.display = 'none';
+        }
+
+        // Setup GitHub database
+        async function setupGitHub() {
+            const user = document.getElementById('githubUser').value.trim();
+            const repo = document.getElementById('githubRepo').value.trim();
+            const token = document.getElementById('githubToken').value.trim();
+            
+            if (!user || !repo || !token) {
+                showStatus('Please fill in all GitHub details', 'error');
+                return;
+            }
+
+            showStatus('Setting up GitHub database...', 'success');
+
             try {
-                const sessionItems = items.filter(item => item.isNewUpload);
-                sessionStorage.setItem('sessionItems', JSON.stringify(sessionItems));
-                return true;
-            } catch (e) {
-                console.error('Error saving items:', e);
+                // Test the connection and create initial file
+                const initialData = JSON.stringify([], null, 2);
+                const response = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/items.json`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: 'Initialize outfit database',
+                        content: btoa(initialData)
+                    })
+                });
+
+                if (response.ok) {
+                    // Save credentials
+                    GITHUB_USER = user;
+                    GITHUB_REPO = repo;
+                    GITHUB_TOKEN = token;
+                    
+                    localStorage.setItem('github_user', user);
+                    localStorage.setItem('github_repo', repo);
+                    localStorage.setItem('github_token', token);
+                    
+                    isSetup = true;
+                    
+                    // Hide setup form
+                    document.getElementById('setupBox').style.display = 'none';
+                    document.getElementById('setupForm').style.display = 'none';
+                    document.getElementById('uploadForm').style.display = 'block';
+                    
+                    showStatus('✅ GitHub database connected! Ready to upload items.', 'success');
+                    updateItemCount();
+                } else {
+                    throw new Error('Failed to connect to GitHub');
+                }
+            } catch (error) {
+                showStatus('❌ Setup failed. Check your details and try again.', 'error');
+                console.error('Setup error:', error);
+            }
+        }
+
+        // Load items from GitHub
+        async function loadItemsFromGitHub() {
+            if (!isSetup) return;
+
+            try {
+                showStatus('Loading items...', 'success');
+                
+                const response = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/items.json`, {
+                    headers: {
+                        'Authorization': `token ${GITHUB_TOKEN}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const content = atob(data.content);
+                    items = JSON.parse(content);
+                    
+                    console.log(`📦 Loaded ${items.length} items from GitHub`);
+                    updateItemCount();
+                    hideStatus();
+                } else if (response.status === 404) {
+                    // File doesn't exist yet, that's okay
+                    items = [];
+                    updateItemCount();
+                    hideStatus();
+                } else {
+                    throw new Error('Failed to load items');
+                }
+            } catch (error) {
+                console.error('Error loading items:', error);
+                showStatus('⚠️ Could not load items. Check your connection.', 'error');
+                items = [];
+                updateItemCount();
+            }
+        }
+
+        // Save items to GitHub
+        async function saveItemsToGitHub() {
+            if (!isSetup) return false;
+
+            try {
+                // Get current file SHA for updating
+                const getResponse = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/items.json`, {
+                    headers: {
+                        'Authorization': `token ${GITHUB_TOKEN}`
+                    }
+                });
+
+                let sha = null;
+                if (getResponse.ok) {
+                    const currentData = await getResponse.json();
+                    sha = currentData.sha;
+                }
+
+                // Update the file
+                const content = JSON.stringify(items, null, 2);
+                const response = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/items.json`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${GITHUB_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: `Update items - ${new Date().toISOString()}`,
+                        content: btoa(content),
+                        sha: sha
+                    })
+                });
+
+                return response.ok;
+            } catch (error) {
+                console.error('Error saving items:', error);
                 return false;
             }
         }
 
         // Upload new item
         async function addItem() {
+            if (!isSetup) {
+                showStatus('Please setup GitHub database first', 'error');
+                return;
+            }
+
             const file = document.getElementById('fileInput').files[0];
             const category = document.getElementById('categoryInput').value;
             const link = document.getElementById('linkInput').value.trim();
@@ -408,13 +595,13 @@
             showStatus('Uploading to Cloudinary...', 'success');
 
             try {
-                // Upload to Cloudinary
+                // Step 1: Upload image to Cloudinary
                 const formData = new FormData();
                 formData.append('file', file);
                 formData.append('upload_preset', UPLOAD_PRESET);
                 formData.append('folder', 'outfit-generator');
 
-                const response = await fetch(
+                const cloudinaryResponse = await fetch(
                     `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
                     {
                         method: 'POST',
@@ -422,39 +609,42 @@
                     }
                 );
 
-                if (!response.ok) {
-                    throw new Error('Upload failed');
+                if (!cloudinaryResponse.ok) {
+                    throw new Error('Image upload failed');
                 }
 
-                const result = await response.json();
+                const cloudinaryResult = await cloudinaryResponse.json();
                 
-                // Create item record
+                showStatus('Saving to database...', 'success');
+
+                // Step 2: Create item record
                 const newItem = {
                     id: Date.now().toString(),
                     category: category,
                     link: link || null,
-                    imageUrl: `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_400,h_400,c_fit/${result.public_id}.jpg`,
-                    cloudinaryId: result.public_id,
-                    uploadDate: new Date().toISOString(),
-                    isNewUpload: true
+                    imageUrl: `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_400,h_400,c_fit/${cloudinaryResult.public_id}.jpg`,
+                    cloudinaryId: cloudinaryResult.public_id,
+                    uploadDate: new Date().toISOString()
                 };
 
-                // Add to items and save
+                // Step 3: Add to items and save to GitHub
                 items.push(newItem);
-                saveItems();
-                updateItemCount();
-                
-                // Clear form
-                document.getElementById('fileInput').value = '';
-                document.getElementById('categoryInput').value = '';
-                document.getElementById('linkInput').value = '';
-                
-                showStatus('✅ Item uploaded! Available in this session.', 'success');
-                
-                // Show export reminder
-                setTimeout(() => {
-                    showStatus('💡 Use "Export Item List" to save permanently!', 'success');
-                }, 3000);
+                const saveSuccess = await saveItemsToGitHub();
+
+                if (saveSuccess) {
+                    updateItemCount();
+                    
+                    // Clear form
+                    document.getElementById('fileInput').value = '';
+                    document.getElementById('categoryInput').value = '';
+                    document.getElementById('linkInput').value = '';
+                    
+                    showStatus('✅ Item uploaded! Now available to everyone worldwide.', 'success');
+                } else {
+                    // Remove from local array if save failed
+                    items.pop();
+                    throw new Error('Database save failed');
+                }
 
             } catch (error) {
                 console.error('Upload error:', error);
@@ -462,58 +652,10 @@
             }
         }
 
-        // Export items for permanent storage
-        function exportItems() {
-            const exportData = items.map(item => ({
-                category: item.category,
-                link: item.link,
-                imageUrl: item.imageUrl,
-                cloudinaryId: item.cloudinaryId,
-                uploadDate: item.uploadDate
-            }));
-            
-            const jsonString = JSON.stringify(exportData, null, 2);
-            
-            // Copy to clipboard
-            navigator.clipboard.writeText(jsonString).then(() => {
-                showStatus('✅ Item list copied to clipboard! Paste this into the code to make permanent.', 'success');
-            }).catch(() => {
-                // Fallback: show in alert
-                alert('Copy this and paste it into the items array in the code:\n\n' + jsonString);
-            });
-        }
-
-        // Import items
-        function importItems() {
-            const importArea = document.getElementById('importArea');
-            if (importArea.style.display === 'none') {
-                importArea.style.display = 'block';
-                event.target.textContent = 'Process Import';
-            } else {
-                try {
-                    const importData = JSON.parse(importArea.value);
-                    items = [...items, ...importData];
-                    
-                    // Remove duplicates
-                    items = items.filter((item, index, self) => 
-                        index === self.findIndex(t => t.cloudinaryId === item.cloudinaryId)
-                    );
-                    
-                    updateItemCount();
-                    importArea.style.display = 'none';
-                    importArea.value = '';
-                    event.target.textContent = 'Import Item List';
-                    showStatus('✅ Items imported successfully!', 'success');
-                } catch (e) {
-                    showStatus('❌ Invalid JSON format', 'error');
-                }
-            }
-        }
-
         // Generate outfit
         function generateOutfit() {
             if (items.length === 0) {
-                alert('No items available! Upload some items first.');
+                alert('No items available! Upload some items first or check your internet connection.');
                 return;
             }
 
@@ -530,7 +672,7 @@
                 boots: { bottom: '25px', left: '50%', transform: 'translateX(-50%)', width: '140px', height: '100px', zIndex: '1' }
             };
 
-            // Choose dress vs separates
+            // Random choice for dress vs separates
             let dressGenerated = false;
             const dressItems = items.filter(item => item.category === 'dresses');
             
@@ -540,7 +682,7 @@
                 dressGenerated = true;
             }
 
-            // Add other items
+            // Generate other items (skip tops/bottoms if dress generated)
             Object.keys(positions).forEach(category => {
                 if (category === 'dresses') return;
                 if ((category === 'bottoms' || category === 'tops') && dressGenerated) return;
@@ -552,7 +694,7 @@
                 }
             });
 
-            // Handle shoes vs boots
+            // Handle footwear logic (only show one type)
             const hasShoes = items.some(item => item.category === 'shoes');
             const hasBoots = items.some(item => item.category === 'boots');
             
@@ -610,12 +752,11 @@
                 let html = '<h4>All Items:</h4>';
                 items.forEach((item, index) => {
                     const uploadDate = new Date(item.uploadDate).toLocaleDateString();
-                    const isNew = item.isNewUpload ? ' (New)' : '';
                     html += `
                         <div class="item-card">
                             <img src="${item.imageUrl}" alt="${item.category}">
                             <div class="item-info">
-                                <strong>${item.category.charAt(0).toUpperCase() + item.category.slice(1)}${isNew}</strong><br>
+                                <strong>${item.category.charAt(0).toUpperCase() + item.category.slice(1)}</strong><br>
                                 <small>Added: ${uploadDate}</small><br>
                                 ${item.link ? `<a href="${item.link}" target="_blank" style="font-size: 10px; color: #007AFF;">View Link</a>` : '<span style="font-size: 10px; color: #999;">No link</span>'}
                             </div>
@@ -630,25 +771,35 @@
             }
         }
 
-        function editItem(index) {
+        async function editItem(index) {
             const item = items[index];
             const newLink = prompt('Edit shopping link:', item.link || '');
             
             if (newLink !== null) {
                 items[index].link = newLink.trim() || null;
-                saveItems();
-                displayItemList();
-                showStatus('Link updated in session', 'success');
+                const success = await saveItemsToGitHub();
+                
+                if (success) {
+                    displayItemList();
+                    showStatus('Link updated successfully!', 'success');
+                } else {
+                    showStatus('Failed to save changes', 'error');
+                }
             }
         }
 
-        function deleteItem(index) {
-            if (confirm('Delete this item from the session?')) {
+        async function deleteItem(index) {
+            if (confirm('Delete this item? This will remove it for everyone.')) {
                 items.splice(index, 1);
-                saveItems();
-                updateItemCount();
-                displayItemList();
-                showStatus('Item deleted from session', 'success');
+                const success = await saveItemsToGitHub();
+                
+                if (success) {
+                    updateItemCount();
+                    displayItemList();
+                    showStatus('Item deleted successfully', 'success');
+                } else {
+                    showStatus('Failed to delete item', 'error');
+                }
             }
         }
 
@@ -661,10 +812,11 @@
             statusDiv.textContent = message;
             statusDiv.className = `upload-status ${type}`;
             statusDiv.style.display = 'block';
-            
-            setTimeout(() => {
-                statusDiv.style.display = 'none';
-            }, 4000);
+        }
+
+        function hideStatus() {
+            const statusDiv = document.getElementById('uploadStatus');
+            statusDiv.style.display = 'none';
         }
 
         function isValidURL(string) {
@@ -702,6 +854,9 @@
             } else {
                 panel.classList.add('show');
                 btn.textContent = 'Hide';
+                if (isSetup) {
+                    loadItemsFromGitHub();
+                }
             }
         }
 
@@ -713,7 +868,7 @@
                 return;
             }
             
-            alert('To save:\n\n📱 iPhone: Volume Up + Power\n🤖 Android: Volume Down + Power');
+            alert('To save your outfit:\n\n📱 iPhone: Volume Up + Power button\n🤖 Android: Volume Down + Power button\n\nThis will screenshot the outfit area perfectly!');
         }
     </script>
 </body>
