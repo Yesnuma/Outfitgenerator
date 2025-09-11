@@ -1,164 +1,671 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Outfit Generator</title>
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{background:#A6E6FD;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px;font-family:Arial,Helvetica,sans-serif}
-    .container{display:flex;flex-direction:column;align-items:center;min-height:100vh}
-    .title{margin-bottom:30px;cursor:pointer;user-select:none}
-    .title-row{display:flex;justify-content:center;margin-bottom:6px}
-    .letter-block{background:#FF0;border:2px solid #000;width:42px;height:42px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:bold;margin:0 2px}
-    .canvas-container{background:#fff;width:360px;height:450px;margin-bottom:30px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,.1);position:relative}
-    .clothing-spot{position:absolute;transition:transform .2s ease}
-    .clothing-spot.clickable{cursor:pointer}
-    .clothing-spot.clickable:hover{transform:scale(1.05)}
-    .clothing-spot img{width:100%;height:100%;object-fit:contain}
-    .generate-btn{background:#fff;border:2px solid #000;padding:15px 30px;font-size:18px;font-weight:bold;cursor:pointer;border-radius:8px;margin-bottom:10px}
-    .save-btn{background:#007AFF;color:#fff;border:0;padding:12px 25px;border-radius:20px;cursor:pointer;margin:5px}
-    .admin-btn{position:fixed;top:10px;right:10px;background:#ff4444;color:#fff;border:0;padding:8px 16px;border-radius:5px;font-size:12px;z-index:100;opacity:0;visibility:hidden;transition:opacity .3s ease}
-    .admin-btn.show{opacity:1;visibility:visible}
-    .admin-panel{display:none;background:#f0f0f0;padding:20px;margin:20px auto;max-width:350px;border-radius:10px;border:2px solid #000}
-    .admin-panel.show{display:block}
-    .admin-panel input,.admin-panel select,.admin-panel button{width:100%;padding:10px;margin:5px 0;border:1px solid #ccc;border-radius:5px;font-size:14px}
-    .admin-panel button{background:#333;color:#fff;cursor:pointer}
-    .upload-status{margin:10px 0;padding:10px;border-radius:5px;font-size:14px;display:none}
-    .upload-status.success{background:#d4edda;color:#155724}
-    .upload-status.error{background:#f8d7da;color:#721c24}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outfit Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #A6E6FD;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><rect width="800" height="600" fill="%23A6E6FD"/><text x="50" y="50" font-size="20" fill="%23000B26">✦</text><text x="150" y="80" font-size="16" fill="%23000B26">·</text><text x="300" y="40" font-size="14" fill="%23000B26">◦</text><text x="450" y="70" font-size="18" fill="%23000B26">✧</text><text x="600" y="45" font-size="16" fill="%23000B26">·</text><text x="750" y="85" font-size="20" fill="%23000B26">◆</text><text x="100" y="150" font-size="16" fill="%23000B26">·</text><text x="250" y="120" font-size="20" fill="%23000B26">✦</text><text x="400" y="160" font-size="14" fill="%23000B26">◦</text><text x="550" y="140" font-size="18" fill="%23000B26">✧</text><text x="700" y="180" font-size="16" fill="%23000B26">·</text><text x="80" y="250" font-size="14" fill="%23000B26">◦</text><text x="200" y="220" font-size="16" fill="%23000B26">·</text><text x="350" y="260" font-size="20" fill="%23000B26">✦</text><text x="500" y="240" font-size="18" fill="%23000B26">✧</text><text x="650" y="280" font-size="14" fill="%23000B26">◦</text><text x="120" y="350" font-size="18" fill="%23000B26">✧</text><text x="270" y="320" font-size="16" fill="%23000B26">·</text><text x="420" y="360" font-size="20" fill="%23000B26">◆</text><text x="570" y="340" font-size="14" fill="%23000B26">◦</text><text x="720" y="380" font-size="16" fill="%23000B26">·</text><text x="60" y="450" font-size="16" fill="%23000B26">·</text><text x="180" y="420" font-size="20" fill="%23000B26">✦</text><text x="330" y="460" font-size="14" fill="%23000B26">◦</text><text x="480" y="440" font-size="18" fill="%23000B26">✧</text><text x="630" y="480" font-size="16" fill="%23000B26">·</text><text x="140" y="550" font-size="18" fill="%23000B26">✧</text><text x="290" y="520" font-size="16" fill="%23000B26">·</text><text x="440" y="560" font-size="20" fill="%23000B26">◆</text><text x="590" y="540" font-size="14" fill="%23000B26">◦</text><text x="740" y="580" font-size="16" fill="%23000B26">·</text></svg>');
+            background-repeat: repeat;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.7;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+
+        .title {
+            margin-bottom: 30px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        .title-row {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 6px;
+        }
+
+        .letter-block {
+            background-color: #FFFF00;
+            border: 2px solid #000000;
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: #000000;
+            margin: 0 2px;
+        }
+
+        .canvas-container {
+            background-color: white;
+            width: 360px;
+            height: 450px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #bdc3c7;
+            font-size: 18px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .clothing-spot {
+            position: absolute;
+            background: transparent;
+            transition: transform 0.2s ease;
+        }
+
+        .clothing-spot.clickable {
+            cursor: pointer;
+        }
+
+        .clothing-spot.clickable:hover {
+            transform: scale(1.05);
+        }
+
+        .clothing-spot img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .generate-btn {
+            background-color: white;
+            border: 2px solid #000000;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #000000;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+        }
+
+        .generate-btn:hover {
+            background-color: #f8f9fa;
+            transform: translateY(-2px);
+        }
+
+        .save-btn {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        .admin-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease;
+        }
+
+        .admin-btn.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .admin-panel {
+            display: none;
+            background: #f0f0f0;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 350px;
+            border-radius: 10px;
+            border: 2px solid #000000;
+        }
+
+        .admin-panel.show {
+            display: block;
+        }
+
+        .admin-panel input, .admin-panel select, .admin-panel button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        .admin-panel button {
+            background: #333;
+            color: white;
+            cursor: pointer;
+        }
+
+        .admin-panel h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .admin-panel p {
+            margin: 10px 0 5px 0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .view-items-btn {
+            background: #007AFF !important;
+        }
+
+        .clear-data-btn {
+            background: #ff4444 !important;
+            margin-top: 10px;
+        }
+
+        .item-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .item-card img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 3px;
+        }
+
+        .item-info {
+            flex: 1;
+            font-size: 12px;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .item-actions button {
+            padding: 5px 8px;
+            font-size: 11px;
+            margin: 0;
+            width: auto;
+        }
+
+        .edit-btn {
+            background: #007AFF !important;
+        }
+
+        .delete-btn {
+            background: #ff4444 !important;
+        }
+
+        .upload-status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .upload-status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .upload-status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        @media (max-width: 480px) {
+            .letter-block {
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
+            }
+            
+            .canvas-container {
+                width: 300px;
+                height: 375px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <button class="admin-btn" id="adminBtn" onclick="toggleAdmin()">Admin</button>
-  <div class="container">
-    <div class="title" onclick="secretClick()">
-      <div class="title-row">
-        <div class="letter-block">O</div><div class="letter-block">U</div><div class="letter-block">T</div>
-        <div class="letter-block">F</div><div class="letter-block">I</div><div class="letter-block">T</div>
-      </div>
-      <div class="title-row">
-        <div class="letter-block">G</div><div class="letter-block">E</div><div class="letter-block">N</div>
-        <div class="letter-block">E</div><div class="letter-block">R</div><div class="letter-block">A</div>
-        <div class="letter-block">T</div><div class="letter-block">O</div><div class="letter-block">R</div>
-      </div>
+    <button class="admin-btn" id="adminBtn" onclick="toggleAdmin()">Admin</button>
+
+    <div class="container">
+        <div class="title" onclick="secretClick()">
+            <div class="title-row">
+                <div class="letter-block">O</div>
+                <div class="letter-block">U</div>
+                <div class="letter-block">T</div>
+                <div class="letter-block">F</div>
+                <div class="letter-block">I</div>
+                <div class="letter-block">T</div>
+            </div>
+            <div class="title-row">
+                <div class="letter-block">G</div>
+                <div class="letter-block">E</div>
+                <div class="letter-block">N</div>
+                <div class="letter-block">E</div>
+                <div class="letter-block">R</div>
+                <div class="letter-block">A</div>
+                <div class="letter-block">T</div>
+                <div class="letter-block">O</div>
+                <div class="letter-block">R</div>
+            </div>
+        </div>
+
+        <div class="admin-panel" id="adminPanel">
+            <h3>Add Item</h3>
+            <input type="file" id="fileInput" accept="image/*">
+            <select id="categoryInput">
+                <option value="">Select Category</option>
+                <option value="bags">Bags</option>
+                <option value="accessories">Accessories</option>
+                <option value="tops">Tops</option>
+                <option value="dresses">Dresses</option>
+                <option value="bottoms">Bottoms</option>
+                <option value="shoes">Shoes</option>
+                <option value="boots">Boots</option>
+            </select>
+            <input type="url" id="linkInput" placeholder="Shopping link (optional)">
+            <div id="uploadStatus" class="upload-status" style="display: none;"></div>
+            <button onclick="addItem()">Add Item</button>
+            <p>Items: <span id="itemCount">0</span></p>
+            
+            <hr style="margin: 20px 0; border: 1px solid #ccc;">
+            
+            <h3>Manage Items</h3>
+            <button class="view-items-btn" onclick="showItemList()">View All Items</button>
+            <button class="clear-data-btn" onclick="clearAllData()">Clear All Data</button>
+            <div id="itemList" style="display: none; max-height: 300px; overflow-y: auto; margin-top: 10px;"></div>
+        </div>
+
+        <div class="canvas-container" id="outfitCanvas">
+            <!-- Generated outfit will appear here -->
+        </div>
+
+        <button class="generate-btn" onclick="generateOutfit()">G̾e̾n̾e̾r̾a̾t̾e̾</button>
+        
+        <button class="save-btn" onclick="saveOutfit()">Save Outfit Image</button>
     </div>
 
-    <div class="admin-panel" id="adminPanel">
-      <h3>Add Item</h3>
-      <input type="file" id="fileInput" accept="image/*">
-      <select id="categoryInput">
-        <option value="">Select Category</option>
-        <option value="tops">Tops</option>
-        <option value="bottoms">Bottoms</option>
-        <option value="dresses">Dresses</option>
-        <option value="outerwear">Outerwear</option>
-        <option value="shoes">Shoes</option>
-        <option value="boots">Boots</option>
-        <option value="bags">Bags</option>
-        <option value="accessories">Accessories</option>
-      </select>
-      <input type="url" id="linkInput" placeholder="Shopping link (optional)">
-      <div id="uploadStatus" class="upload-status"></div>
-      <button onclick="addItem()">Upload & Save</button>
-    </div>
+    <script>
+        let items = [];
+        let clickCount = 0;
+        let lastClickTime = 0;
 
-    <div class="canvas-container" id="outfitCanvas"></div>
-    <button class="generate-btn" onclick="generateOutfit()">Generate</button>
-    <button class="save-btn" onclick="saveOutfit()">Save Outfit</button>
-  </div>
-
-  <script>
-    /* ---------- YOU'RE DONE CONFIGURING: these are already filled ---------- */
-    const CLOUD_NAME   = "dpykewcjw";
-    const UPLOAD_PRESET= "Outfitgenerator";
-    const ADD_ITEM_URL = "https://evojxuzstvjpqxrfiwqf.supabase.co/functions/v1/add-item";
-    const GENERATE_URL = "https://evojxuzstvjpqxrfiwqf.supabase.co/functions/v1/generate";
-    const ADMIN_TOKEN  = ""; // leave blank unless you set one in Supabase
-    /* ---------------------------------------------------------------------- */
-
-    // Secret admin toggle (tap title 5x)
-    let clicks=0,last=0;
-    function secretClick(){const now=Date.now();if(now-last>2000)clicks=0;clicks++;last=now;
-      if(clicks>=5){document.getElementById("adminBtn").classList.add("show");clicks=0;}}
-    function toggleAdmin(){document.getElementById("adminPanel").classList.toggle("show");}
-
-    function showStatus(msg,type="success"){const el=document.getElementById("uploadStatus");el.textContent=msg;el.className="upload-status "+type;el.style.display="block";setTimeout(()=>{el.style.display="none"},4000);}
-
-    async function uploadToCloudinary(file){
-      const form=new FormData();
-      form.append("file",file);
-      form.append("upload_preset",UPLOAD_PRESET);
-      const res=await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,{method:"POST",body:form});
-      const json=await res.json();
-      if(!json.secure_url) throw new Error(json.error?.message || "Cloudinary upload failed");
-      return json.secure_url;
-    }
-
-    async function addItem(){
-      const file=document.getElementById("fileInput").files[0];
-      const type=document.getElementById("categoryInput").value;
-      const shop_link=document.getElementById("linkInput").value.trim();
-      if(!file||!type){showStatus("Pick a file + category","error");return;}
-      try{
-        showStatus("Uploading…");
-        const image_url=await uploadToCloudinary(file);
-
-        showStatus("Saving…");
-        const headers={"content-type":"application/json"};
-        if(ADMIN_TOKEN) headers["authorization"] = `Bearer ${ADMIN_TOKEN}`;
-        const res=await fetch(ADD_ITEM_URL,{method:"POST",headers,body:JSON.stringify({type,image_url,shop_link:shop_link||null})});
-        const out=await res.json();
-        if(!res.ok) throw new Error(out?.error || "Save failed");
-        showStatus("Saved ✓");
-        document.getElementById("fileInput").value="";
-        document.getElementById("categoryInput").value="";
-        document.getElementById("linkInput").value="";
-      }catch(e){showStatus(e.message,"error");}
-    }
-
-    async function fetchOutfit(){
-      const res=await fetch(GENERATE_URL,{cache:"no-store"});
-      const json=await res.json();
-      if(!res.ok) throw new Error(json?.error || "Generate failed");
-      return json.items||[];
-    }
-
-    function placeItem(c,it){
-      const pos={tops:{top:"15px",left:"50%",transform:"translateX(-50%)",width:"160px",height:"130px",zIndex:"3"},
-        dresses:{top:"15px",left:"50%",transform:"translateX(-50%)",width:"160px",height:"200px",zIndex:"3"},
-        bottoms:{top:"120px",left:"50%",transform:"translateX(-50%)",width:"140px",height:"170px",zIndex:"2"},
-        bags:{top:"100px",left:"20px",width:"110px",height:"110px",zIndex:"5"},
-        accessories:{top:"80px",right:"20px",width:"50px",height:"50px",zIndex:"4"},
-        shoes:{bottom:"25px",left:"50%",transform:"translateX(-50%)",width:"100px",height:"70px",zIndex:"1"},
-        boots:{bottom:"25px",left:"50%",transform:"translateX(-50%)",width:"140px",height:"100px",zIndex:"1"},
-        outerwear:{top:"5px",right:"10px",width:"120px",height:"150px",zIndex:"4"}};
-      const d=document.createElement("div");d.className="clothing-spot";Object.assign(d.style,pos[it.type]||{});
-      if(it.shop_link){d.classList.add("clickable");d.onclick=()=>window.open(it.shop_link,"_blank");}
-      d.innerHTML=`<img src="${it.image_url}" alt="${it.type}">`;c.appendChild(d);
-    }
-
-    async function generateOutfit(){
-      const c=document.getElementById("outfitCanvas");c.innerHTML="";
-      try{
-        const items=await fetchOutfit();
-        const hasDress=items.some(i=>i.type==="dresses");
-        const order=["dresses","tops","bottoms","bags","accessories","outerwear","shoes","boots"];
-        for(const t of order){
-          if((t==="tops"||t==="bottoms")&&hasDress) continue;
-          const it=items.find(x=>x.type===t); if(it) placeItem(c,it);
+        // Simple storage functions using localStorage
+        function saveItems() {
+            try {
+                const itemsToSave = [];
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    itemsToSave.push({
+                        category: String(item.category || ''),
+                        url: String(item.url || ''),
+                        link: item.link ? String(item.link) : null,
+                        id: Number(item.id) || Date.now()
+                    });
+                }
+                localStorage.setItem('outfitItems', JSON.stringify(itemsToSave));
+                return true;
+            } catch (error) {
+                console.error('Save failed:', error);
+                return false;
+            }
         }
-        const hasShoes=items.some(i=>i.type==="shoes");
-        const hasBoots=items.some(i=>i.type==="boots");
-        if(hasShoes&&hasBoots){
-          const hide=Math.random()<0.5?"shoes":"boots";
-          const el=c.querySelector(`img[alt="${hide}"]`);
-          if(el&&el.parentNode) el.parentNode.remove();
-        }
-      }catch(e){alert("Could not generate outfit: "+e.message);}
-    }
 
-    function saveOutfit(){alert("Take a screenshot to save your outfit!");}
-  </script>
+        function loadItems() {
+            try {
+                const saved = localStorage.getItem('outfitItems');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed)) {
+                        items = parsed;
+                        updateItemCount();
+                        return true;
+                    }
+                }
+            } catch (error) {
+                console.error('Load failed:', error);
+            }
+            items = [];
+            return false;
+        }
+
+        // Load items when page loads
+        window.addEventListener('load', loadItems);
+
+        function clearAllData() {
+            items = [];
+            updateItemCount();
+            displayItemList();
+            try {
+                localStorage.removeItem('outfitItems');
+            } catch (error) {
+                console.error('Clear failed:', error);
+            }
+            showUploadStatus('All data cleared.', 'success');
+        }
+
+        function updateItemCount() {
+            document.getElementById('itemCount').textContent = items.length;
+        }
+
+        function showUploadStatus(message, type) {
+            const statusDiv = document.getElementById('uploadStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = 'upload-status ' + type;
+            statusDiv.style.display = 'block';
+            
+            setTimeout(function() {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function secretClick() {
+            const now = Date.now();
+            
+            if (now - lastClickTime > 2000) {
+                clickCount = 0;
+            }
+            
+            clickCount++;
+            lastClickTime = now;
+            
+            if (clickCount >= 5) {
+                document.getElementById('adminBtn').classList.add('show');
+                clickCount = 0;
+            }
+        }
+
+        function toggleAdmin() {
+            const panel = document.getElementById('adminPanel');
+            const btn = document.getElementById('adminBtn');
+            
+            if (panel.classList.contains('show')) {
+                panel.classList.remove('show');
+                btn.textContent = 'Admin';
+            } else {
+                panel.classList.add('show');
+                btn.textContent = 'Hide';
+            }
+        }
+
+        function addItem() {
+            const fileInput = document.getElementById('fileInput');
+            const categoryInput = document.getElementById('categoryInput');
+            const linkInput = document.getElementById('linkInput');
+            
+            const file = fileInput.files[0];
+            const category = categoryInput.value;
+            const link = linkInput.value.trim();
+            
+            if (!file || !category) {
+                showUploadStatus('Please select both a file and category', 'error');
+                return;
+            }
+
+            if (link && !link.startsWith('http')) {
+                showUploadStatus('Please enter a valid URL starting with http', 'error');
+                return;
+            }
+
+            // Convert file to data URL for local storage
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const newItem = {
+                    category: category,
+                    url: e.target.result, // Data URL for local storage
+                    link: link || null,
+                    id: Date.now()
+                };
+                
+                items.push(newItem);
+                saveItems();
+                updateItemCount();
+                
+                fileInput.value = '';
+                categoryInput.value = '';
+                linkInput.value = '';
+                
+                if (document.getElementById('itemList').style.display !== 'none') {
+                    displayItemList();
+                }
+                
+                showUploadStatus('Item added successfully!', 'success');
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        function showItemList() {
+            const listDiv = document.getElementById('itemList');
+            const btn = document.querySelector('.view-items-btn');
+            
+            if (listDiv.style.display === 'none') {
+                displayItemList();
+                listDiv.style.display = 'block';
+                btn.textContent = 'Hide Items';
+            } else {
+                listDiv.style.display = 'none';
+                btn.textContent = 'View All Items';
+            }
+        }
+
+        function displayItemList() {
+            const listDiv = document.getElementById('itemList');
+            
+            if (items.length === 0) {
+                listDiv.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No items yet</p>';
+            } else {
+                let html = '';
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    html += '<div class="item-card">';
+                    html += '<img src="' + item.url + '" alt="' + item.category + '">';
+                    html += '<div class="item-info">';
+                    html += '<strong>' + item.category.charAt(0).toUpperCase() + item.category.slice(1) + '</strong><br>';
+                    if (item.link) {
+                        html += '<a href="' + item.link + '" target="_blank" style="font-size: 10px; color: #007AFF;">View Link</a>';
+                    } else {
+                        html += '<span style="font-size: 10px; color: #999;">No link</span>';
+                    }
+                    html += '</div>';
+                    html += '<div class="item-actions">';
+                    html += '<button class="edit-btn" onclick="editItem(' + i + ')">Edit</button>';
+                    html += '<button class="delete-btn" onclick="deleteItem(' + i + ')">Delete</button>';
+                    html += '</div>';
+                    html += '</div>';
+                }
+                listDiv.innerHTML = html;
+            }
+        }
+
+        function deleteItem(index) {
+            items.splice(index, 1);
+            saveItems();
+            updateItemCount();
+            displayItemList();
+        }
+
+        function editItem(index) {
+            const item = items[index];
+            const newLink = prompt('Edit shopping link (leave empty to remove):', item.link || '');
+            
+            if (newLink !== null) {
+                items[index].link = newLink.trim() || null;
+                saveItems();
+                displayItemList();
+                showUploadStatus('Link updated!', 'success');
+            }
+        }
+
+        function generateOutfit() {
+            if (items.length === 0) {
+                alert('No items yet! Use the admin panel to add clothing items.');
+                return;
+            }
+
+            const canvas = document.getElementById('outfitCanvas');
+            canvas.innerHTML = '';
+
+            const positions = {
+                tops: { top: '15px', left: '50%', transform: 'translateX(-50%)', width: '160px', height: '130px', zIndex: '3' },
+                dresses: { top: '15px', left: '50%', transform: 'translateX(-50%)', width: '160px', height: '200px', zIndex: '3' },
+                bottoms: { top: '120px', left: '50%', transform: 'translateX(-50%)', width: '140px', height: '170px', zIndex: '2' },
+                bags: { top: '100px', left: '20px', width: '110px', height: '110px', zIndex: '5' },
+                accessories: { top: '80px', right: '20px', width: '50px', height: '50px', zIndex: '4' },
+                shoes: { bottom: '25px', left: '50%', transform: 'translateX(-50%)', width: '100px', height: '70px', zIndex: '1' },
+                boots: { bottom: '25px', left: '50%', transform: 'translateX(-50%)', width: '140px', height: '100px', zIndex: '1' }
+            };
+
+            let dressGenerated = false;
+            const dressItems = items.filter(function(item) { return item.category === 'dresses'; });
+            
+            if (dressItems.length > 0 && Math.random() < 0.5) {
+                const randomDress = dressItems[Math.floor(Math.random() * dressItems.length)];
+                
+                const div = document.createElement('div');
+                div.className = 'clothing-spot';
+                
+                const pos = positions['dresses'];
+                div.style.top = pos.top;
+                div.style.left = pos.left;
+                div.style.transform = pos.transform;
+                div.style.width = pos.width;
+                div.style.height = pos.height;
+                div.style.zIndex = pos.zIndex;
+                
+                if (randomDress.link) {
+                    div.classList.add('clickable');
+                    div.onclick = function(e) {
+                        e.preventDefault();
+                        window.open(randomDress.link, '_blank');
+                    };
+                    div.title = 'Click to shop this item';
+                }
+                
+                div.innerHTML = '<img src="' + randomDress.url + '" alt="dresses">';
+                canvas.appendChild(div);
+                dressGenerated = true;
+            }
+
+            const categories = ['tops', 'bottoms', 'bags', 'accessories', 'shoes', 'boots'];
+            for (let i = 0; i < categories.length; i++) {
+                const category = categories[i];
+                if (category === 'dresses') continue;
+                if ((category === 'bottoms' || category === 'tops') && dressGenerated) continue;
+                
+                const categoryItems = items.filter(function(item) { return item.category === category; });
+                if (categoryItems.length > 0) {
+                    const randomItem = categoryItems[Math.floor(Math.random() * categoryItems.length)];
+                    
+                    const div = document.createElement('div');
+                    div.className = 'clothing-spot';
+                    
+                    const pos = positions[category];
+                    div.style.top = pos.top || '';
+                    div.style.left = pos.left || '';
+                    div.style.right = pos.right || '';
+                    div.style.bottom = pos.bottom || '';
+                    div.style.transform = pos.transform || '';
+                    div.style.width = pos.width;
+                    div.style.height = pos.height;
+                    div.style.zIndex = pos.zIndex;
+                    
+                    if (randomItem.link) {
+                        div.classList.add('clickable');
+                        div.onclick = function(e) {
+                            e.preventDefault();
+                            window.open(randomItem.link, '_blank');
+                        };
+                        div.title = 'Click to shop this item';
+                    }
+                    
+                    div.innerHTML = '<img src="' + randomItem.url + '" alt="' + category + '">';
+                    canvas.appendChild(div);
+                }
+            }
+
+            const hasShoes = items.some(function(item) { return item.category === 'shoes'; });
+            const hasBoots = items.some(function(item) { return item.category === 'boots'; });
+            
+            if (hasShoes && hasBoots) {
+                const showShoes = Math.random() < 0.5;
+                const hideCategory = showShoes ? 'boots' : 'shoes';
+                const hideElement = canvas.querySelector('[alt="' + hideCategory + '"]');
+                if (hideElement && hideElement.parentNode) {
+                    hideElement.parentNode.remove();
+                }
+            }
+        }
+
+        function saveOutfit() {
+            const clothingSpots = document.querySelectorAll('.clothing-spot img');
+            
+            if (clothingSpots.length === 0) {
+                alert('Generate an outfit first, then save!');
+                return;
+            }
+            
+            alert('To save your outfit:\n\nPress Volume Up + Power button (iPhone)\nPress Volume Down + Power button (Android)');
+        }
+    </script>
 </body>
 </html>
