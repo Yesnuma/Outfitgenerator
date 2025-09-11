@@ -43,14 +43,14 @@
             min-height: 100vh;
             position: relative;
             z-index: 1;
-            width: 100%;
-            max-width: 500px;
         }
 
         .title {
             margin-bottom: 30px;
             cursor: pointer;
             user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
         }
 
         .title-row {
@@ -162,8 +162,7 @@
             background: #f0f0f0;
             padding: 20px;
             margin: 20px auto;
-            width: 100%;
-            max-width: 400px;
+            max-width: 350px;
             border-radius: 10px;
             border: 2px solid #000000;
         }
@@ -174,53 +173,38 @@
 
         .admin-panel input, .admin-panel select, .admin-panel button {
             width: 100%;
-            padding: 12px;
-            margin: 8px 0;
+            padding: 10px;
+            margin: 5px 0;
             border: 1px solid #ccc;
             border-radius: 5px;
             box-sizing: border-box;
-            font-size: 16px;
+            font-size: 14px;
         }
 
         .admin-panel button {
             background: #333;
             color: white;
             cursor: pointer;
-            font-weight: bold;
         }
 
         .admin-panel h3 {
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             color: #333;
-            text-align: center;
         }
 
         .admin-panel p {
             margin: 10px 0 5px 0;
             color: #666;
             font-size: 14px;
-            text-align: center;
         }
 
-        .upload-status {
-            margin: 10px 0;
-            padding: 12px;
-            border-radius: 5px;
-            font-size: 14px;
-            text-align: center;
-            font-weight: bold;
+        .view-items-btn {
+            background: #007AFF !important;
         }
 
-        .upload-status.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .upload-status.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+        .clear-data-btn {
+            background: #ff4444 !important;
+            margin-top: 10px;
         }
 
         .item-card {
@@ -252,11 +236,10 @@
         }
 
         .item-actions button {
-            padding: 8px 12px;
-            font-size: 12px;
+            padding: 5px 8px;
+            font-size: 11px;
             margin: 0;
             width: auto;
-            border-radius: 3px;
         }
 
         .edit-btn {
@@ -267,15 +250,26 @@
             background: #ff4444 !important;
         }
 
-        .manage-btn {
-            background: #4CAF50 !important;
+        .upload-status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .upload-status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .upload-status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
 
         @media (max-width: 480px) {
-            .container {
-                padding: 10px;
-            }
-            
             .letter-block {
                 width: 36px;
                 height: 36px;
@@ -285,16 +279,6 @@
             .canvas-container {
                 width: 300px;
                 height: 375px;
-            }
-            
-            .admin-panel {
-                margin: 10px;
-                padding: 15px;
-            }
-            
-            .admin-panel input, .admin-panel select, .admin-panel button {
-                padding: 15px;
-                font-size: 16px;
             }
         }
     </style>
@@ -326,7 +310,7 @@
         </div>
 
         <div class="admin-panel" id="adminPanel">
-            <h3>Add New Item</h3>
+            <h3>Add Item</h3>
             <input type="file" id="fileInput" accept="image/*">
             <select id="categoryInput">
                 <option value="">Select Category</option>
@@ -338,368 +322,100 @@
                 <option value="shoes">Shoes</option>
                 <option value="boots">Boots</option>
             </select>
-            <input type="url" id="linkInput" placeholder="Shopping link (eBay, Depop, etc.) - Optional">
+            <input type="url" id="linkInput" placeholder="Shopping link (optional)">
             <div id="uploadStatus" class="upload-status" style="display: none;"></div>
-            <button onclick="addItem()">Upload Item</button>
-            <p>Items available: <span id="itemCount">Loading...</span></p>
+            <button onclick="addItem()">Add Item</button>
+            <p>Items: <span id="itemCount">0</span></p>
             
             <hr style="margin: 20px 0; border: 1px solid #ccc;">
             
             <h3>Manage Items</h3>
-            <button class="manage-btn" onclick="toggleItemList()">View & Edit Items</button>
-            <div id="itemList" style="display: none; max-height: 300px; overflow-y: auto; margin-top: 10px; background: white; border-radius: 5px; padding: 10px;"></div>
+            <button class="view-items-btn" onclick="showItemList()">View All Items</button>
+            <button class="clear-data-btn" onclick="clearAllData()">Clear All Data</button>
+            <div id="itemList" style="display: none; max-height: 300px; overflow-y: auto; margin-top: 10px;"></div>
         </div>
 
         <div class="canvas-container" id="outfitCanvas">
             <!-- Generated outfit will appear here -->
         </div>
 
-        <button class="generate-btn" onclick="generateOutfit()">Generate</button>
-        <button class="save-btn" onclick="saveOutfit()">Save Outfit</button>
+        <button class="generate-btn" onclick="generateOutfit()">G̾e̾n̾e̾r̾a̾t̾e̾</button>
+        
+        <button class="save-btn" onclick="saveOutfit()">Save Outfit Image</button>
     </div>
 
     <script>
-        // Configuration
-        const CLOUD_NAME = 'dpykewcjw';
-        const UPLOAD_PRESET = 'Outfitgenerator';
-
-        // GitHub credentials
-        const GITHUB_USER = 'yesnuma';
-        const GITHUB_REPO = 'Outfitgenerator';
-        const GITHUB_TOKEN = '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';
-
-        // Global state
         let items = [];
         let clickCount = 0;
         let lastClickTime = 0;
 
-        // Initialize when page loads
-        window.addEventListener('load', () => {
-            console.log('Loading items from GitHub...');
-            loadItems();
-        });
-
-        // Load items from GitHub
-        async function loadItems() {
+        // Simple storage functions using localStorage
+        function saveItems() {
             try {
-                const response = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/items.json`, {
-                    headers: {
-                        'Authorization': `token ${GITHUB_TOKEN}`
-                    }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    const content = atob(data.content);
-                    items = JSON.parse(content);
-                    console.log(`Loaded ${items.length} items`);
-                } else if (response.status === 404) {
-                    // File doesn't exist yet, start with empty array
-                    items = [];
-                    console.log('No items file found, starting fresh');
-                } else {
-                    throw new Error('Failed to load items');
+                const itemsToSave = [];
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    itemsToSave.push({
+                        category: String(item.category || ''),
+                        url: String(item.url || ''),
+                        link: item.link ? String(item.link) : null,
+                        id: Number(item.id) || Date.now()
+                    });
                 }
+                localStorage.setItem('outfitItems', JSON.stringify(itemsToSave));
+                return true;
             } catch (error) {
-                console.error('Error loading items:', error);
-                items = [];
-            }
-            
-            updateItemCount();
-        }
-
-        // Save items to GitHub
-        async function saveItems() {
-            try {
-                // Get current file SHA for updating
-                const getResponse = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/items.json`, {
-                    headers: {
-                        'Authorization': `token ${GITHUB_TOKEN}`
-                    }
-                });
-
-                let sha = null;
-                if (getResponse.ok) {
-                    const currentData = await getResponse.json();
-                    sha = currentData.sha;
-                }
-
-                // Update the file
-                const content = JSON.stringify(items, null, 2);
-                const response = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/items.json`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `token ${GITHUB_TOKEN}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        message: `Update items - ${new Date().toISOString()}`,
-                        content: btoa(content),
-                        sha: sha
-                    })
-                });
-
-                return response.ok;
-            } catch (error) {
-                console.error('Error saving items:', error);
+                console.error('Save failed:', error);
                 return false;
             }
         }
 
-        // Upload new item
-        async function addItem() {
-            const file = document.getElementById('fileInput').files[0];
-            const category = document.getElementById('categoryInput').value;
-            const link = document.getElementById('linkInput').value.trim();
-            
-            if (!file || !category) {
-                showStatus('Please select both a file and category', 'error');
-                return;
-            }
-
-            if (link && !isValidURL(link)) {
-                showStatus('Please enter a valid URL', 'error');
-                return;
-            }
-
-            showStatus('Uploading to Cloudinary...', 'success');
-
+        function loadItems() {
             try {
-                // Upload image to Cloudinary
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('upload_preset', UPLOAD_PRESET);
-                formData.append('folder', 'outfit-generator');
-
-                const cloudinaryResponse = await fetch(
-                    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-                    {
-                        method: 'POST',
-                        body: formData
+                const saved = localStorage.getItem('outfitItems');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed)) {
+                        items = parsed;
+                        updateItemCount();
+                        return true;
                     }
-                );
-
-                if (!cloudinaryResponse.ok) {
-                    throw new Error('Image upload failed');
                 }
-
-                const cloudinaryResult = await cloudinaryResponse.json();
-                
-                showStatus('Saving to database...', 'success');
-
-                // Create item record
-                const newItem = {
-                    id: Date.now().toString(),
-                    category: category,
-                    link: link || null,
-                    imageUrl: `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_400,h_400,c_fit/${cloudinaryResult.public_id}.jpg`,
-                    cloudinaryId: cloudinaryResult.public_id,
-                    uploadDate: new Date().toISOString()
-                };
-
-                // Add to items and save to GitHub
-                items.push(newItem);
-                const saveSuccess = await saveItems();
-
-                if (saveSuccess) {
-                    updateItemCount();
-                    
-                    // Clear form
-                    document.getElementById('fileInput').value = '';
-                    document.getElementById('categoryInput').value = '';
-                    document.getElementById('linkInput').value = '';
-                    
-                    showStatus('Item uploaded! Now available to everyone.', 'success');
-                    
-                    // Refresh item list if visible
-                    if (document.getElementById('itemList').style.display !== 'none') {
-                        displayItemList();
-                    }
-                } else {
-                    // Remove from local array if save failed
-                    items.pop();
-                    throw new Error('Database save failed');
-                }
-
             } catch (error) {
-                console.error('Upload error:', error);
-                showStatus(`Upload failed: ${error.message}`, 'error');
+                console.error('Load failed:', error);
             }
+            items = [];
+            return false;
         }
 
-        // Generate outfit
-        function generateOutfit() {
-            if (items.length === 0) {
-                alert('No items available! Upload some items first.');
-                return;
+        // Load items when page loads
+        window.addEventListener('load', loadItems);
+
+        function clearAllData() {
+            items = [];
+            updateItemCount();
+            displayItemList();
+            try {
+                localStorage.removeItem('outfitItems');
+            } catch (error) {
+                console.error('Clear failed:', error);
             }
-
-            const canvas = document.getElementById('outfitCanvas');
-            canvas.innerHTML = '';
-
-            const positions = {
-                tops: { top: '15px', left: '50%', transform: 'translateX(-50%)', width: '160px', height: '130px', zIndex: '3' },
-                dresses: { top: '15px', left: '50%', transform: 'translateX(-50%)', width: '160px', height: '200px', zIndex: '3' },
-                bottoms: { top: '120px', left: '50%', transform: 'translateX(-50%)', width: '140px', height: '170px', zIndex: '2' },
-                bags: { top: '100px', left: '20px', width: '110px', height: '110px', zIndex: '5' },
-                accessories: { top: '80px', right: '20px', width: '50px', height: '50px', zIndex: '4' },
-                shoes: { bottom: '25px', left: '50%', transform: 'translateX(-50%)', width: '100px', height: '70px', zIndex: '1' },
-                boots: { bottom: '25px', left: '50%', transform: 'translateX(-50%)', width: '140px', height: '100px', zIndex: '1' }
-            };
-
-            // Random choice for dress vs separates
-            let dressGenerated = false;
-            const dressItems = items.filter(item => item.category === 'dresses');
-            
-            if (dressItems.length > 0 && Math.random() < 0.5) {
-                const randomDress = dressItems[Math.floor(Math.random() * dressItems.length)];
-                addClothingSpot(canvas, randomDress, positions['dresses']);
-                dressGenerated = true;
-            }
-
-            // Generate other items
-            Object.keys(positions).forEach(category => {
-                if (category === 'dresses') return;
-                if ((category === 'bottoms' || category === 'tops') && dressGenerated) return;
-                
-                const categoryItems = items.filter(item => item.category === category);
-                if (categoryItems.length > 0) {
-                    const randomItem = categoryItems[Math.floor(Math.random() * categoryItems.length)];
-                    addClothingSpot(canvas, randomItem, positions[category]);
-                }
-            });
-
-            // Handle footwear logic
-            const hasShoes = items.some(item => item.category === 'shoes');
-            const hasBoots = items.some(item => item.category === 'boots');
-            
-            if (hasShoes && hasBoots) {
-                const showShoes = Math.random() < 0.5;
-                const hideCategory = showShoes ? 'boots' : 'shoes';
-                const hideElement = canvas.querySelector(`[alt="${hideCategory}"]`);
-                if (hideElement && hideElement.parentNode) {
-                    hideElement.parentNode.remove();
-                }
-            }
-        }
-
-        function addClothingSpot(canvas, item, position) {
-            const div = document.createElement('div');
-            div.className = 'clothing-spot';
-            
-            Object.keys(position).forEach(style => {
-                div.style[style] = position[style];
-            });
-            
-            if (item.link) {
-                div.classList.add('clickable');
-                div.onclick = function(e) {
-                    e.preventDefault();
-                    window.open(item.link, '_blank');
-                };
-                div.title = 'Click to shop this item';
-            }
-            
-            div.innerHTML = `<img src="${item.imageUrl}" alt="${item.category}">`;
-            canvas.appendChild(div);
-        }
-
-        function toggleItemList() {
-            const listDiv = document.getElementById('itemList');
-            const btn = event.target;
-            
-            if (listDiv.style.display === 'none') {
-                displayItemList();
-                listDiv.style.display = 'block';
-                btn.textContent = 'Hide Items';
-            } else {
-                listDiv.style.display = 'none';
-                btn.textContent = 'View & Edit Items';
-            }
-        }
-
-        function displayItemList() {
-            const listDiv = document.getElementById('itemList');
-            
-            if (items.length === 0) {
-                listDiv.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No items yet</p>';
-            } else {
-                let html = '<h4>All Items:</h4>';
-                items.forEach((item, index) => {
-                    const uploadDate = new Date(item.uploadDate).toLocaleDateString();
-                    html += `
-                        <div class="item-card">
-                            <img src="${item.imageUrl}" alt="${item.category}">
-                            <div class="item-info">
-                                <strong>${item.category.charAt(0).toUpperCase() + item.category.slice(1)}</strong><br>
-                                <small>Added: ${uploadDate}</small><br>
-                                ${item.link ? `<a href="${item.link}" target="_blank" style="font-size: 10px; color: #007AFF;">View Link</a>` : '<span style="font-size: 10px; color: #999;">No link</span>'}
-                            </div>
-                            <div class="item-actions">
-                                <button class="edit-btn" onclick="editItem(${index})">Edit</button>
-                                <button class="delete-btn" onclick="deleteItem(${index})">Delete</button>
-                            </div>
-                        </div>
-                    `;
-                });
-                listDiv.innerHTML = html;
-            }
-        }
-
-        async function editItem(index) {
-            const item = items[index];
-            const newLink = prompt('Edit shopping link:', item.link || '');
-            
-            if (newLink !== null) {
-                items[index].link = newLink.trim() || null;
-                const success = await saveItems();
-                
-                if (success) {
-                    displayItemList();
-                    showStatus('Link updated successfully!', 'success');
-                } else {
-                    showStatus('Failed to save changes', 'error');
-                }
-            }
-        }
-
-        async function deleteItem(index) {
-            if (confirm('Delete this item? This will remove it for everyone.')) {
-                items.splice(index, 1);
-                const success = await saveItems();
-                
-                if (success) {
-                    updateItemCount();
-                    displayItemList();
-                    showStatus('Item deleted successfully', 'success');
-                } else {
-                    showStatus('Failed to delete item', 'error');
-                }
-            }
+            showUploadStatus('All data cleared.', 'success');
         }
 
         function updateItemCount() {
             document.getElementById('itemCount').textContent = items.length;
         }
 
-        function showStatus(message, type) {
+        function showUploadStatus(message, type) {
             const statusDiv = document.getElementById('uploadStatus');
             statusDiv.textContent = message;
-            statusDiv.className = `upload-status ${type}`;
+            statusDiv.className = 'upload-status ' + type;
             statusDiv.style.display = 'block';
             
-            setTimeout(() => {
+            setTimeout(function() {
                 statusDiv.style.display = 'none';
-            }, 4000);
-        }
-
-        function isValidURL(string) {
-            try {
-                new URL(string);
-                return string.startsWith('http://') || string.startsWith('https://');
-            } catch (_) {
-                return false;
-            }
+            }, 5000);
         }
 
         function secretClick() {
@@ -731,15 +447,224 @@
             }
         }
 
+        function addItem() {
+            const fileInput = document.getElementById('fileInput');
+            const categoryInput = document.getElementById('categoryInput');
+            const linkInput = document.getElementById('linkInput');
+            
+            const file = fileInput.files[0];
+            const category = categoryInput.value;
+            const link = linkInput.value.trim();
+            
+            if (!file || !category) {
+                showUploadStatus('Please select both a file and category', 'error');
+                return;
+            }
+
+            if (link && !link.startsWith('http')) {
+                showUploadStatus('Please enter a valid URL starting with http', 'error');
+                return;
+            }
+
+            // Convert file to data URL for local storage
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const newItem = {
+                    category: category,
+                    url: e.target.result, // Data URL for local storage
+                    link: link || null,
+                    id: Date.now()
+                };
+                
+                items.push(newItem);
+                saveItems();
+                updateItemCount();
+                
+                fileInput.value = '';
+                categoryInput.value = '';
+                linkInput.value = '';
+                
+                if (document.getElementById('itemList').style.display !== 'none') {
+                    displayItemList();
+                }
+                
+                showUploadStatus('Item added successfully!', 'success');
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        function showItemList() {
+            const listDiv = document.getElementById('itemList');
+            const btn = document.querySelector('.view-items-btn');
+            
+            if (listDiv.style.display === 'none') {
+                displayItemList();
+                listDiv.style.display = 'block';
+                btn.textContent = 'Hide Items';
+            } else {
+                listDiv.style.display = 'none';
+                btn.textContent = 'View All Items';
+            }
+        }
+
+        function displayItemList() {
+            const listDiv = document.getElementById('itemList');
+            
+            if (items.length === 0) {
+                listDiv.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No items yet</p>';
+            } else {
+                let html = '';
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    html += '<div class="item-card">';
+                    html += '<img src="' + item.url + '" alt="' + item.category + '">';
+                    html += '<div class="item-info">';
+                    html += '<strong>' + item.category.charAt(0).toUpperCase() + item.category.slice(1) + '</strong><br>';
+                    if (item.link) {
+                        html += '<a href="' + item.link + '" target="_blank" style="font-size: 10px; color: #007AFF;">View Link</a>';
+                    } else {
+                        html += '<span style="font-size: 10px; color: #999;">No link</span>';
+                    }
+                    html += '</div>';
+                    html += '<div class="item-actions">';
+                    html += '<button class="edit-btn" onclick="editItem(' + i + ')">Edit</button>';
+                    html += '<button class="delete-btn" onclick="deleteItem(' + i + ')">Delete</button>';
+                    html += '</div>';
+                    html += '</div>';
+                }
+                listDiv.innerHTML = html;
+            }
+        }
+
+        function deleteItem(index) {
+            items.splice(index, 1);
+            saveItems();
+            updateItemCount();
+            displayItemList();
+        }
+
+        function editItem(index) {
+            const item = items[index];
+            const newLink = prompt('Edit shopping link (leave empty to remove):', item.link || '');
+            
+            if (newLink !== null) {
+                items[index].link = newLink.trim() || null;
+                saveItems();
+                displayItemList();
+                showUploadStatus('Link updated!', 'success');
+            }
+        }
+
+        function generateOutfit() {
+            if (items.length === 0) {
+                alert('No items yet! Use the admin panel to add clothing items.');
+                return;
+            }
+
+            const canvas = document.getElementById('outfitCanvas');
+            canvas.innerHTML = '';
+
+            const positions = {
+                tops: { top: '15px', left: '50%', transform: 'translateX(-50%)', width: '160px', height: '130px', zIndex: '3' },
+                dresses: { top: '15px', left: '50%', transform: 'translateX(-50%)', width: '160px', height: '200px', zIndex: '3' },
+                bottoms: { top: '120px', left: '50%', transform: 'translateX(-50%)', width: '140px', height: '170px', zIndex: '2' },
+                bags: { top: '100px', left: '20px', width: '110px', height: '110px', zIndex: '5' },
+                accessories: { top: '80px', right: '20px', width: '50px', height: '50px', zIndex: '4' },
+                shoes: { bottom: '25px', left: '50%', transform: 'translateX(-50%)', width: '100px', height: '70px', zIndex: '1' },
+                boots: { bottom: '25px', left: '50%', transform: 'translateX(-50%)', width: '140px', height: '100px', zIndex: '1' }
+            };
+
+            let dressGenerated = false;
+            const dressItems = items.filter(function(item) { return item.category === 'dresses'; });
+            
+            if (dressItems.length > 0 && Math.random() < 0.5) {
+                const randomDress = dressItems[Math.floor(Math.random() * dressItems.length)];
+                
+                const div = document.createElement('div');
+                div.className = 'clothing-spot';
+                
+                const pos = positions['dresses'];
+                div.style.top = pos.top;
+                div.style.left = pos.left;
+                div.style.transform = pos.transform;
+                div.style.width = pos.width;
+                div.style.height = pos.height;
+                div.style.zIndex = pos.zIndex;
+                
+                if (randomDress.link) {
+                    div.classList.add('clickable');
+                    div.onclick = function(e) {
+                        e.preventDefault();
+                        window.open(randomDress.link, '_blank');
+                    };
+                    div.title = 'Click to shop this item';
+                }
+                
+                div.innerHTML = '<img src="' + randomDress.url + '" alt="dresses">';
+                canvas.appendChild(div);
+                dressGenerated = true;
+            }
+
+            const categories = ['tops', 'bottoms', 'bags', 'accessories', 'shoes', 'boots'];
+            for (let i = 0; i < categories.length; i++) {
+                const category = categories[i];
+                if (category === 'dresses') continue;
+                if ((category === 'bottoms' || category === 'tops') && dressGenerated) continue;
+                
+                const categoryItems = items.filter(function(item) { return item.category === category; });
+                if (categoryItems.length > 0) {
+                    const randomItem = categoryItems[Math.floor(Math.random() * categoryItems.length)];
+                    
+                    const div = document.createElement('div');
+                    div.className = 'clothing-spot';
+                    
+                    const pos = positions[category];
+                    div.style.top = pos.top || '';
+                    div.style.left = pos.left || '';
+                    div.style.right = pos.right || '';
+                    div.style.bottom = pos.bottom || '';
+                    div.style.transform = pos.transform || '';
+                    div.style.width = pos.width;
+                    div.style.height = pos.height;
+                    div.style.zIndex = pos.zIndex;
+                    
+                    if (randomItem.link) {
+                        div.classList.add('clickable');
+                        div.onclick = function(e) {
+                            e.preventDefault();
+                            window.open(randomItem.link, '_blank');
+                        };
+                        div.title = 'Click to shop this item';
+                    }
+                    
+                    div.innerHTML = '<img src="' + randomItem.url + '" alt="' + category + '">';
+                    canvas.appendChild(div);
+                }
+            }
+
+            const hasShoes = items.some(function(item) { return item.category === 'shoes'; });
+            const hasBoots = items.some(function(item) { return item.category === 'boots'; });
+            
+            if (hasShoes && hasBoots) {
+                const showShoes = Math.random() < 0.5;
+                const hideCategory = showShoes ? 'boots' : 'shoes';
+                const hideElement = canvas.querySelector('[alt="' + hideCategory + '"]');
+                if (hideElement && hideElement.parentNode) {
+                    hideElement.parentNode.remove();
+                }
+            }
+        }
+
         function saveOutfit() {
             const clothingSpots = document.querySelectorAll('.clothing-spot img');
             
             if (clothingSpots.length === 0) {
-                alert('Generate an outfit first!');
+                alert('Generate an outfit first, then save!');
                 return;
             }
             
-            alert('To save your outfit:\n\nPhone: Volume Up + Power button\nThis will screenshot the outfit area perfectly!');
+            alert('To save your outfit:\n\nPress Volume Up + Power button (iPhone)\nPress Volume Down + Power button (Android)');
         }
     </script>
 </body>
