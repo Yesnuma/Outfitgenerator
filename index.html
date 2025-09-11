@@ -349,147 +349,64 @@
     </div>
 
     <script>
-        // Firebase configuration - using a free database for persistent storage
-        const firebaseConfig = {
-            apiKey: "AIzaSyDJxR7xqU_VLqx-rJnOqVwF6ZYuZyY0OcY",
-            authDomain: "outfit-generator-db.firebaseapp.com",
-            databaseURL: "https://outfit-generator-db-default-rtdb.firebaseio.com",
-            projectId: "outfit-generator-db",
-            storageBucket: "outfit-generator-db.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:abcdef123456789"
-        };
+        // Your actual Cloudinary configuration
+        const CLOUDINARY_CLOUD_NAME = 'dpykewcjw';
+        const CLOUDINARY_UPLOAD_PRESET = 'outfitgenerator';
 
         let items = [];
         let clickCount = 0;
         let lastClickTime = 0;
-        let db;
-        let isFirebaseLoaded = false;
 
-        // Initialize Firebase
-        function initFirebase() {
-            const script = document.createElement('script');
-            script.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-            script.onload = () => {
-                const dbScript = document.createElement('script');
-                dbScript.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
-                dbScript.onload = () => {
-                    import('https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js').then((firebase) => {
-                        import('https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js').then((database) => {
-                            const app = firebase.initializeApp(firebaseConfig);
-                            db = database.getDatabase(app);
-                            isFirebaseLoaded = true;
-                            loadItemsFromCloud();
-                        });
-                    });
-                };
-                document.head.appendChild(dbScript);
-            };
-            document.head.appendChild(script);
-        }
-
-        // Fallback to localStorage with proper error handling
-        function saveToLocalStorage() {
+        // Fixed localStorage handling to prevent DataClone errors
+        function saveItemsToStorage() {
             try {
+                // Clean the items array to prevent serialization issues
                 const itemsToSave = items.map(item => ({
-                    id: item.id,
-                    category: item.category,
-                    url: item.url,
-                    link: item.link || null
-                }));
-                localStorage.setItem('outfitItems', JSON.stringify(itemsToSave));
-            } catch (error) {
-                console.error('localStorage save failed:', error);
-            }
-        }
-
-        function loadFromLocalStorage() {
-            try {
-                const saved = localStorage.getItem('outfitItems');
-                if (saved) {
-                    items = JSON.parse(saved);
-                    updateItemCount();
-                }
-            } catch (error) {
-                console.error('localStorage load failed:', error);
-                items = [];
-            }
-        }
-
-        function saveItemsToCloud() {
-            if (!isFirebaseLoaded) {
-                saveToLocalStorage();
-                return;
-            }
-            
-            try {
-                // Save to Firebase
-                const itemsToSave = items.map(item => ({
-                    id: item.id,
-                    category: item.category,
-                    url: item.url,
-                    link: item.link || null
+                    category: String(item.category || ''),
+                    url: String(item.url || ''),
+                    link: item.link ? String(item.link) : null,
+                    id: Number(item.id) || Date.now(),
+                    cloudinary_id: item.cloudinary_id ? String(item.cloudinary_id) : null
                 }));
                 
-                firebase.database().ref('outfitItems').set(itemsToSave).then(() => {
-                    console.log('Items saved to cloud');
-                }).catch((error) => {
-                    console.error('Cloud save failed, using localStorage:', error);
-                    saveToLocalStorage();
-                });
+                localStorage.setItem('outfitGeneratorItems', JSON.stringify(itemsToSave));
+                return true;
             } catch (error) {
-                console.error('Cloud save error:', error);
-                saveToLocalStorage();
+                console.error('Storage save failed:', error);
+                return false;
             }
         }
 
-        function loadItemsFromCloud() {
-            if (!isFirebaseLoaded) {
-                loadFromLocalStorage();
-                return;
-            }
-
+        function loadItemsFromStorage() {
             try {
-                firebase.database().ref('outfitItems').once('value').then((snapshot) => {
-                    const data = snapshot.val();
-                    if (data && Array.isArray(data)) {
-                        items = data;
-                    } else {
-                        loadFromLocalStorage(); // Fallback to localStorage
+                const savedItems = localStorage.getItem('outfitGeneratorItems');
+                if (savedItems) {
+                    const parsed = JSON.parse(savedItems);
+                    if (Array.isArray(parsed)) {
+                        items = parsed;
+                        updateItemCount();
+                        return true;
                     }
-                    updateItemCount();
-                }).catch((error) => {
-                    console.error('Cloud load failed, using localStorage:', error);
-                    loadFromLocalStorage();
-                });
+                }
             } catch (error) {
-                console.error('Cloud load error:', error);
-                loadFromLocalStorage();
+                console.error('Storage load failed:', error);
             }
+            items = [];
+            return false;
         }
 
         function clearAllData() {
-            if (confirm('This will delete all stored items. Continue?')) {
-                items = [];
-                updateItemCount();
-                displayItemList();
-                
-                // Clear both cloud and local storage
-                if (isFirebaseLoaded) {
-                    try {
-                        firebase.database().ref('outfitItems').remove();
-                    } catch (error) {
-                        console.error('Cloud clear failed:', error);
-                    }
-                }
-                
+            if (confirm('This will delete all stored items and start fresh. Continue?')) {
                 try {
-                    localStorage.removeItem('outfitItems');
+                    localStorage.removeItem('outfitGeneratorItems');
+                    items = [];
+                    updateItemCount();
+                    displayItemList();
+                    showUploadStatus('All data cleared. Ready for cloud uploads.', 'success');
                 } catch (error) {
-                    console.error('localStorage clear failed:', error);
+                    console.error('Clear error:', error);
+                    showUploadStatus('Error clearing data', 'error');
                 }
-                
-                showUploadStatus('All data cleared.', 'success');
             }
         }
 
@@ -508,12 +425,8 @@
             }, 5000);
         }
 
-        // Initialize on page load
-        window.addEventListener('load', () => {
-            initFirebase();
-            // Also load from localStorage immediately as fallback
-            loadFromLocalStorage();
-        });
+        // Load items when page loads
+        window.addEventListener('load', loadItemsFromStorage);
 
         function secretClick() {
             const now = Date.now();
@@ -559,41 +472,63 @@
                 return;
             }
 
-            showUploadStatus('Processing image...', 'success');
+            showUploadStatus('Uploading to Cloudinary...', 'success');
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const newItem = {
-                    id: Date.now(),
-                    category: category,
-                    url: e.target.result,
-                    link: link || null
-                };
-                
-                items.push(newItem);
-                updateItemCount();
-                
-                // Save to both cloud and localStorage
-                saveItemsToCloud();
-                
-                // Clear form
-                document.getElementById('fileInput').value = '';
-                document.getElementById('categoryInput').value = '';
-                document.getElementById('linkInput').value = '';
-                
-                // Refresh item list if shown
-                if (document.getElementById('itemList').style.display !== 'none') {
-                    displayItemList();
+            // Upload to your actual Cloudinary account
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+            formData.append('folder', 'outfit-items');
+
+            fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                
-                showUploadStatus('Item saved to cloud!', 'success');
-            };
-            
-            reader.onerror = function() {
-                showUploadStatus('Error reading file. Please try again.', 'error');
-            };
-            
-            reader.readAsDataURL(file);
+                return response.json();
+            })
+            .then(data => {
+                if (data.secure_url) {
+                    const newItem = {
+                        category: category,
+                        url: data.secure_url,
+                        link: link || null,
+                        id: Date.now(),
+                        cloudinary_id: data.public_id
+                    };
+                    
+                    items.push(newItem);
+                    updateItemCount();
+                    
+                    // Clear form
+                    document.getElementById('fileInput').value = '';
+                    document.getElementById('categoryInput').value = '';
+                    document.getElementById('linkInput').value = '';
+                    
+                    // Save to localStorage for persistence
+                    const saveSuccess = saveItemsToStorage();
+                    
+                    // Refresh item list if shown
+                    if (document.getElementById('itemList').style.display !== 'none') {
+                        displayItemList();
+                    }
+                    
+                    if (saveSuccess) {
+                        showUploadStatus('Successfully uploaded to Cloudinary and saved!', 'success');
+                    } else {
+                        showUploadStatus('Uploaded to Cloudinary but local save failed', 'error');
+                    }
+                } else {
+                    throw new Error('Upload failed: ' + (data.error?.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Upload error:', error);
+                showUploadStatus('Upload failed: ' + error.message, 'error');
+            });
         }
 
         function isValidURL(string) {
@@ -649,7 +584,7 @@
             if (confirm('Delete this item?')) {
                 items.splice(index, 1);
                 updateItemCount();
-                saveItemsToCloud();
+                saveItemsToStorage();
                 displayItemList();
                 showUploadStatus('Item deleted successfully!', 'success');
             }
@@ -661,7 +596,7 @@
             
             if (newLink !== null) {
                 items[index].link = newLink.trim() || null;
-                saveItemsToCloud();
+                saveItemsToStorage();
                 displayItemList();
                 showUploadStatus('Link updated successfully!', 'success');
             }
