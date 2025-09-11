@@ -609,6 +609,95 @@
             
             alert('To save your outfit:\n\n📱 iPhone: Press Volume Up + Power button\n🤖 Android: Press Volume Down + Power button\n\nThis will screenshot the outfit area perfectly!');
         }
+
+        function showItemList() {
+            const listDiv = document.getElementById('itemList');
+            const btn = event.target;
+            
+            if (listDiv.style.display === 'none') {
+                displayItemList();
+                listDiv.style.display = 'block';
+                btn.textContent = 'Hide Items';
+            } else {
+                listDiv.style.display = 'none';
+                btn.textContent = 'View/Edit Items';
+            }
+        }
+
+        function displayItemList() {
+            const listDiv = document.getElementById('itemList');
+            
+            if (items.length === 0) {
+                listDiv.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No items yet</p>';
+            } else {
+                let html = '';
+                items.forEach((item, index) => {
+                    html += `
+                        <div class="item-card" data-index="${index}">
+                            <img src="${item.url}" alt="${item.category}">
+                            <div class="item-info">
+                                <strong>${item.category.charAt(0).toUpperCase() + item.category.slice(1)}</strong><br>
+                                <small>ID: ${item.id.split('/').pop()}</small><br>
+                                ${item.link ? `<a href="${item.link}" target="_blank" style="font-size: 10px; color: #007AFF;">View Link</a>` : '<span style="font-size: 10px; color: #999;">No link</span>'}
+                            </div>
+                            <div class="item-actions">
+                                <button class="edit-btn" onclick="editItem(${index})">Edit</button>
+                                <button class="delete-btn" onclick="deleteItem(${index})">Delete</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                listDiv.innerHTML = html;
+            }
+        }
+
+        function editItem(index) {
+            const item = items[index];
+            const newLink = prompt('Edit shopping link (leave empty to remove):', item.link || '');
+            
+            if (newLink !== null) {
+                // Update the item
+                items[index].link = newLink.trim() || null;
+                
+                // Save to localStorage
+                saveItemsToStorage();
+                
+                // Refresh the display
+                displayItemList();
+                
+                showDebugInfo(`Updated item ${index}. Link changed to: ${items[index].link || 'none'}`);
+                showUploadStatus('Item link updated successfully!', 'success');
+            }
+        }
+
+        function deleteItem(index) {
+            const item = items[index];
+            
+            if (confirm(`Delete this ${item.category} item? This cannot be undone.`)) {
+                // Remove from items array
+                const deletedItem = items.splice(index, 1)[0];
+                
+                // Save to localStorage
+                saveItemsToStorage();
+                
+                // Update count and refresh display
+                updateItemCount();
+                displayItemList();
+                
+                showDebugInfo(`Deleted item: ${deletedItem.id}`);
+                showUploadStatus('Item deleted successfully!', 'success');
+            }
+        }
+
+        function saveItemsToStorage() {
+            try {
+                // Save current items to localStorage
+                localStorage.setItem('recentItems', JSON.stringify(items));
+                showDebugInfo('Items saved to local storage');
+            } catch (e) {
+                console.log('Failed to save to localStorage:', e);
+            }
+        }
     </script>
 </body>
 </html>
