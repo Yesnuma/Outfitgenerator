@@ -21,7 +21,6 @@
             font-family: Arial, sans-serif;
         }
 
-        /* Star background pattern */
         body::before {
             content: "";
             position: fixed;
@@ -52,8 +51,6 @@
             margin-bottom: 30px;
             cursor: pointer;
             user-select: none;
-            -webkit-user-select: none;
-            -webkit-touch-callout: none;
         }
 
         .title-row {
@@ -182,7 +179,7 @@
             border: 1px solid #ccc;
             border-radius: 5px;
             box-sizing: border-box;
-            font-size: 16px; /* Prevents zoom on mobile */
+            font-size: 16px;
         }
 
         .admin-panel button {
@@ -224,16 +221,6 @@
             background: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
-        }
-
-        .setup-box {
-            background: #e7f3ff;
-            border: 1px solid #b3d9ff;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 10px 0;
-            color: #0066cc;
-            font-size: 14px;
         }
 
         .item-card {
@@ -284,7 +271,6 @@
             background: #4CAF50 !important;
         }
 
-        /* Mobile optimizations */
         @media (max-width: 480px) {
             .container {
                 padding: 10px;
@@ -307,7 +293,7 @@
             }
             
             .admin-panel input, .admin-panel select, .admin-panel button {
-                padding: 15px; /* Larger touch targets */
+                padding: 15px;
                 font-size: 16px;
             }
         }
@@ -340,55 +326,35 @@
         </div>
 
         <div class="admin-panel" id="adminPanel">
-            <div class="setup-box" id="setupBox" style="display: none;">
-                <strong>📋 One-Time Setup Required</strong><br><br>
-                Create a GitHub repository to store your item database:<br><br>
-                1. Go to <a href="https://github.com/new" target="_blank">GitHub.com/new</a><br>
-                2. Name it "outfit-database"<br>
-                3. Make it public<br>
-                4. Create repository<br>
-                5. Enter details below
-            </div>
+            <h3>Add New Item</h3>
+            <input type="file" id="fileInput" accept="image/*">
+            <select id="categoryInput">
+                <option value="">Select Category</option>
+                <option value="bags">Bags</option>
+                <option value="accessories">Accessories</option>
+                <option value="tops">Tops</option>
+                <option value="dresses">Dresses</option>
+                <option value="bottoms">Bottoms</option>
+                <option value="shoes">Shoes</option>
+                <option value="boots">Boots</option>
+            </select>
+            <input type="url" id="linkInput" placeholder="Shopping link (eBay, Depop, etc.) - Optional">
+            <div id="uploadStatus" class="upload-status" style="display: none;"></div>
+            <button onclick="addItem()">Upload Item</button>
+            <p>Items available: <span id="itemCount">Loading...</span></p>
             
-            <div id="setupForm" style="display: none;">
-                <input type="text" id="githubUser" placeholder="Your GitHub username">
-                <input type="text" id="githubRepo" placeholder="Repository name (outfit-database)">
-                <input type="text" id="githubToken" placeholder="GitHub Personal Access Token">
-                <button onclick="setupGitHub()">Connect GitHub Database</button>
-                <p><a href="https://github.com/settings/personal-access-tokens/new" target="_blank">Create Token Here</a></p>
-            </div>
+            <hr style="margin: 20px 0; border: 1px solid #ccc;">
             
-            <div id="uploadForm">
-                <h3>Add New Item</h3>
-                <input type="file" id="fileInput" accept="image/*">
-                <select id="categoryInput">
-                    <option value="">Select Category</option>
-                    <option value="bags">Bags</option>
-                    <option value="accessories">Accessories</option>
-                    <option value="tops">Tops</option>
-                    <option value="dresses">Dresses</option>
-                    <option value="bottoms">Bottoms</option>
-                    <option value="shoes">Shoes</option>
-                    <option value="boots">Boots</option>
-                </select>
-                <input type="url" id="linkInput" placeholder="Shopping link (eBay, Depop, etc.) - Optional">
-                <div id="uploadStatus" class="upload-status" style="display: none;"></div>
-                <button onclick="addItem()">Upload Item</button>
-                <p>Items available: <span id="itemCount">Loading...</span></p>
-                
-                <hr style="margin: 20px 0; border: 1px solid #ccc;">
-                
-                <h3>Manage Items</h3>
-                <button class="manage-btn" onclick="toggleItemList()">View & Edit Items</button>
-                <div id="itemList" style="display: none; max-height: 300px; overflow-y: auto; margin-top: 10px; background: white; border-radius: 5px; padding: 10px;"></div>
-            </div>
+            <h3>Manage Items</h3>
+            <button class="manage-btn" onclick="toggleItemList()">View & Edit Items</button>
+            <div id="itemList" style="display: none; max-height: 300px; overflow-y: auto; margin-top: 10px; background: white; border-radius: 5px; padding: 10px;"></div>
         </div>
 
         <div class="canvas-container" id="outfitCanvas">
             <!-- Generated outfit will appear here -->
         </div>
 
-        <button class="generate-btn" onclick="generateOutfit()">G̾e̾n̾e̾r̾a̾t̾e̾</button>
+        <button class="generate-btn" onclick="generateOutfit()">Generate</button>
         <button class="save-btn" onclick="saveOutfit()">Save Outfit</button>
     </div>
 
@@ -397,110 +363,25 @@
         const CLOUD_NAME = 'dpykewcjw';
         const UPLOAD_PRESET = 'Outfitgenerator';
 
-        // GitHub configuration
-        let GITHUB_USER = '';
-        let GITHUB_REPO = '';
-        let GITHUB_TOKEN = '';
+        // GitHub credentials
+        const GITHUB_USER = 'yesnuma';
+        const GITHUB_REPO = 'Outfitgenerator';
+        const GITHUB_TOKEN = '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';
 
         // Global state
         let items = [];
         let clickCount = 0;
         let lastClickTime = 0;
-        let isSetup = false;
 
         // Initialize when page loads
         window.addEventListener('load', () => {
-            console.log('🚀 Outfit Generator starting...');
-            checkSetup();
+            console.log('Loading items from GitHub...');
+            loadItems();
         });
 
-        // Check if GitHub is set up
-        function checkSetup() {
-            // Check for saved GitHub credentials
-            GITHUB_USER = localStorage.getItem('github_user');
-            GITHUB_REPO = localStorage.getItem('github_repo');
-            GITHUB_TOKEN = localStorage.getItem('github_token');
-            
-            if (GITHUB_USER && GITHUB_REPO && GITHUB_TOKEN) {
-                isSetup = true;
-                console.log('✅ GitHub database connected');
-                loadItemsFromGitHub();
-            } else {
-                console.log('⚙️ Setup required');
-                showSetupForm();
-            }
-        }
-
-        // Show setup form
-        function showSetupForm() {
-            document.getElementById('setupBox').style.display = 'block';
-            document.getElementById('setupForm').style.display = 'block';
-            document.getElementById('uploadForm').style.display = 'none';
-        }
-
-        // Setup GitHub database
-        async function setupGitHub() {
-            const user = document.getElementById('githubUser').value.trim();
-            const repo = document.getElementById('githubRepo').value.trim();
-            const token = document.getElementById('githubToken').value.trim();
-            
-            if (!user || !repo || !token) {
-                showStatus('Please fill in all GitHub details', 'error');
-                return;
-            }
-
-            showStatus('Setting up GitHub database...', 'success');
-
-            try {
-                // Test the connection and create initial file
-                const initialData = JSON.stringify([], null, 2);
-                const response = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/items.json`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `token ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        message: 'Initialize outfit database',
-                        content: btoa(initialData)
-                    })
-                });
-
-                if (response.ok) {
-                    // Save credentials
-                    GITHUB_USER = user;
-                    GITHUB_REPO = repo;
-                    GITHUB_TOKEN = token;
-                    
-                    localStorage.setItem('github_user', user);
-                    localStorage.setItem('github_repo', repo);
-                    localStorage.setItem('github_token', token);
-                    
-                    isSetup = true;
-                    
-                    // Hide setup form
-                    document.getElementById('setupBox').style.display = 'none';
-                    document.getElementById('setupForm').style.display = 'none';
-                    document.getElementById('uploadForm').style.display = 'block';
-                    
-                    showStatus('✅ GitHub database connected! Ready to upload items.', 'success');
-                    updateItemCount();
-                } else {
-                    throw new Error('Failed to connect to GitHub');
-                }
-            } catch (error) {
-                showStatus('❌ Setup failed. Check your details and try again.', 'error');
-                console.error('Setup error:', error);
-            }
-        }
-
         // Load items from GitHub
-        async function loadItemsFromGitHub() {
-            if (!isSetup) return;
-
+        async function loadItems() {
             try {
-                showStatus('Loading items...', 'success');
-                
                 const response = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/items.json`, {
                     headers: {
                         'Authorization': `token ${GITHUB_TOKEN}`
@@ -511,30 +392,24 @@
                     const data = await response.json();
                     const content = atob(data.content);
                     items = JSON.parse(content);
-                    
-                    console.log(`📦 Loaded ${items.length} items from GitHub`);
-                    updateItemCount();
-                    hideStatus();
+                    console.log(`Loaded ${items.length} items`);
                 } else if (response.status === 404) {
-                    // File doesn't exist yet, that's okay
+                    // File doesn't exist yet, start with empty array
                     items = [];
-                    updateItemCount();
-                    hideStatus();
+                    console.log('No items file found, starting fresh');
                 } else {
                     throw new Error('Failed to load items');
                 }
             } catch (error) {
                 console.error('Error loading items:', error);
-                showStatus('⚠️ Could not load items. Check your connection.', 'error');
                 items = [];
-                updateItemCount();
             }
+            
+            updateItemCount();
         }
 
         // Save items to GitHub
-        async function saveItemsToGitHub() {
-            if (!isSetup) return false;
-
+        async function saveItems() {
             try {
                 // Get current file SHA for updating
                 const getResponse = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/items.json`, {
@@ -590,7 +465,7 @@
             showStatus('Uploading to Cloudinary...', 'success');
 
             try {
-                // Step 1: Upload image to Cloudinary
+                // Upload image to Cloudinary
                 const formData = new FormData();
                 formData.append('file', file);
                 formData.append('upload_preset', UPLOAD_PRESET);
@@ -612,7 +487,7 @@
                 
                 showStatus('Saving to database...', 'success');
 
-                // Step 2: Create item record
+                // Create item record
                 const newItem = {
                     id: Date.now().toString(),
                     category: category,
@@ -622,9 +497,9 @@
                     uploadDate: new Date().toISOString()
                 };
 
-                // Step 3: Add to items and save to GitHub
+                // Add to items and save to GitHub
                 items.push(newItem);
-                const saveSuccess = await saveItemsToGitHub();
+                const saveSuccess = await saveItems();
 
                 if (saveSuccess) {
                     updateItemCount();
@@ -634,7 +509,12 @@
                     document.getElementById('categoryInput').value = '';
                     document.getElementById('linkInput').value = '';
                     
-                    showStatus('Item uploaded! Now available to everyone worldwide.', 'success');
+                    showStatus('Item uploaded! Now available to everyone.', 'success');
+                    
+                    // Refresh item list if visible
+                    if (document.getElementById('itemList').style.display !== 'none') {
+                        displayItemList();
+                    }
                 } else {
                     // Remove from local array if save failed
                     items.pop();
@@ -650,7 +530,7 @@
         // Generate outfit
         function generateOutfit() {
             if (items.length === 0) {
-                alert('No items available! Upload some items first or check your internet connection.');
+                alert('No items available! Upload some items first.');
                 return;
             }
 
@@ -677,7 +557,7 @@
                 dressGenerated = true;
             }
 
-            // Generate other items (skip tops/bottoms if dress generated)
+            // Generate other items
             Object.keys(positions).forEach(category => {
                 if (category === 'dresses') return;
                 if ((category === 'bottoms' || category === 'tops') && dressGenerated) return;
@@ -689,7 +569,7 @@
                 }
             });
 
-            // Handle footwear logic (only show one type)
+            // Handle footwear logic
             const hasShoes = items.some(item => item.category === 'shoes');
             const hasBoots = items.some(item => item.category === 'boots');
             
@@ -772,7 +652,7 @@
             
             if (newLink !== null) {
                 items[index].link = newLink.trim() || null;
-                const success = await saveItemsToGitHub();
+                const success = await saveItems();
                 
                 if (success) {
                     displayItemList();
@@ -786,7 +666,7 @@
         async function deleteItem(index) {
             if (confirm('Delete this item? This will remove it for everyone.')) {
                 items.splice(index, 1);
-                const success = await saveItemsToGitHub();
+                const success = await saveItems();
                 
                 if (success) {
                     updateItemCount();
@@ -807,11 +687,10 @@
             statusDiv.textContent = message;
             statusDiv.className = `upload-status ${type}`;
             statusDiv.style.display = 'block';
-        }
-
-        function hideStatus() {
-            const statusDiv = document.getElementById('uploadStatus');
-            statusDiv.style.display = 'none';
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 4000);
         }
 
         function isValidURL(string) {
@@ -849,9 +728,6 @@
             } else {
                 panel.classList.add('show');
                 btn.textContent = 'Hide';
-                if (isSetup) {
-                    loadItemsFromGitHub();
-                }
             }
         }
 
@@ -863,7 +739,7 @@
                 return;
             }
             
-            alert('To save your outfit:\n\n📱 iPhone: Volume Up + Power button\n🤖 Android: Volume Down + Power button\n\nThis will screenshot the outfit area perfectly!');
+            alert('To save your outfit:\n\nPhone: Volume Up + Power button\nThis will screenshot the outfit area perfectly!');
         }
     </script>
 </body>
