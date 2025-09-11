@@ -162,7 +162,7 @@
             background: #f0f0f0;
             padding: 20px;
             margin: 20px auto;
-            max-width: 350px;
+            max-width: 400px;
             border-radius: 10px;
             border: 2px solid #000000;
         }
@@ -227,6 +227,53 @@
             color: #0066cc;
         }
 
+        .item-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .item-card img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 3px;
+        }
+
+        .item-info {
+            flex: 1;
+            font-size: 12px;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .item-actions button {
+            padding: 5px 8px;
+            font-size: 11px;
+            margin: 0;
+            width: auto;
+        }
+
+        .edit-btn {
+            background: #007AFF !important;
+        }
+
+        .delete-btn {
+            background: #ff4444 !important;
+        }
+
+        .manage-btn {
+            background: #4CAF50 !important;
+        }
+
         @media (max-width: 480px) {
             .letter-block {
                 width: 36px;
@@ -268,7 +315,7 @@
         </div>
 
         <div class="admin-panel" id="adminPanel">
-            <h3>Add Item</h3>
+            <h3>📤 Add New Item</h3>
             <input type="file" id="fileInput" accept="image/*">
             <select id="categoryInput">
                 <option value="">Select Category</option>
@@ -282,8 +329,14 @@
             </select>
             <input type="url" id="linkInput" placeholder="Shopping link (eBay, Depop, etc.) - Optional">
             <div id="uploadStatus" class="upload-status" style="display: none;"></div>
-            <button onclick="addItem()">Upload Item</button>
+            <button onclick="addItem()">Upload Item to Cloudinary</button>
             <p>Items available: <span id="itemCount">0</span></p>
+            
+            <hr style="margin: 20px 0; border: 1px solid #ccc;">
+            
+            <h3>🛠️ Manage Items</h3>
+            <button class="manage-btn" onclick="toggleItemList()">View & Edit All Items</button>
+            <div id="itemList" style="display: none; max-height: 300px; overflow-y: auto; margin-top: 10px; background: white; border-radius: 5px; padding: 10px;"></div>
             
             <div id="debugInfo" class="debug-info" style="display: none;"></div>
         </div>
@@ -297,22 +350,11 @@
     </div>
 
     <script>
-        // Simple item database - this will be populated with your Cloudinary items
+        // Item database
         let items = [];
         let clickCount = 0;
         let lastClickTime = 0;
-
-        // Known uploaded items (manually maintained list)
-        // When you upload items, I'll help you add them here
-        const CLOUDINARY_ITEMS = [
-            // Add your uploaded items here like this:
-            // {
-            //     id: 'outfit-generator/your-item-id',
-            //     category: 'tops',
-            //     link: 'https://depop.com/...',
-            //     url: 'https://res.cloudinary.com/dpykewcjw/image/upload/w_400,h_400,c_fit/outfit-generator/your-item-id.jpg'
-            // }
-        ];
+        let itemListVisible = false;
 
         // Load items when page loads
         window.addEventListener('load', function() {
@@ -321,27 +363,28 @@
         });
 
         function loadItems() {
-            // Start with the manually maintained list
-            items = [...CLOUDINARY_ITEMS];
-            
-            // Also check localStorage for recently uploaded items
+            // Load from localStorage (where uploaded items are stored)
             try {
-                const stored = localStorage.getItem('recentItems');
+                const stored = localStorage.getItem('outfitItems');
                 if (stored) {
-                    const recentItems = JSON.parse(stored);
-                    // Merge recent items with existing items (avoid duplicates)
-                    recentItems.forEach(item => {
-                        if (!items.find(existing => existing.id === item.id)) {
-                            items.push(item);
-                        }
-                    });
+                    items = JSON.parse(stored);
+                    showDebugInfo(`Loaded ${items.length} items from storage`);
                 }
             } catch (e) {
-                console.log('No recent items found');
+                console.log('No stored items found');
+                items = [];
             }
             
             updateItemCount();
-            showDebugInfo(`Loaded ${items.length} items total`);
+        }
+
+        function saveItems() {
+            try {
+                localStorage.setItem('outfitItems', JSON.stringify(items));
+                showDebugInfo('Items saved to storage');
+            } catch (e) {
+                console.log('Failed to save items:', e);
+            }
         }
 
         async function addItem() {
@@ -367,8 +410,6 @@
                 formData.append('file', file);
                 formData.append('upload_preset', 'Outfitgenerator');
                 formData.append('folder', 'outfit-generator');
-                
-                // Add tags for easy identification
                 formData.append('tags', `outfit,${category}`);
 
                 const response = await fetch(
@@ -388,14 +429,15 @@
                         id: result.public_id,
                         category: category,
                         link: link || null,
-                        url: `https://res.cloudinary.com/dpykewcjw/image/upload/w_400,h_400,c_fit/${result.public_id}.jpg`
+                        url: `https://res.cloudinary.com/dpykewcjw/image/upload/w_400,h_400,c_fit/${result.public_id}.jpg`,
+                        uploadDate: new Date().toISOString()
                     };
                     
-                    // Add to current items array
+                    // Add to items array
                     items.push(newItem);
                     
-                    // Save to localStorage for persistence
-                    saveRecentItem(newItem);
+                    // Save to storage
+                    saveItems();
                     
                     updateItemCount();
                     
@@ -404,20 +446,12 @@
                     document.getElementById('categoryInput').value = '';
                     document.getElementById('linkInput').value = '';
                     
-                    showUploadStatus('Item uploaded successfully! It will now appear in outfit rotations.', 'success');
+                    // Refresh item list if visible
+                    if (itemListVisible) {
+                        displayItemList();
+                    }
                     
-                    // Show the exact URL for manual addition to the database
-                    showDebugInfo(`
-                        Item uploaded! 
-                        Public ID: ${result.public_id}
-                        Add this to CLOUDINARY_ITEMS array:
-                        {
-                            id: '${result.public_id}',
-                            category: '${category}',
-                            link: ${link ? `'${link}'` : 'null'},
-                            url: '${newItem.url}'
-                        }
-                    `);
+                    showUploadStatus('✅ Item uploaded! Available immediately in outfit rotation.', 'success');
                     
                 } else {
                     const error = await response.json();
@@ -426,28 +460,8 @@
                 
             } catch (error) {
                 console.error('Upload error:', error);
-                showUploadStatus(`Upload failed: ${error.message}`, 'error');
+                showUploadStatus(`❌ Upload failed: ${error.message}`, 'error');
                 showDebugInfo(`Upload failed: ${error.message}`);
-            }
-        }
-
-        function saveRecentItem(item) {
-            try {
-                let recentItems = [];
-                const stored = localStorage.getItem('recentItems');
-                if (stored) {
-                    recentItems = JSON.parse(stored);
-                }
-                
-                // Add new item and keep only last 50 items
-                recentItems.push(item);
-                if (recentItems.length > 50) {
-                    recentItems = recentItems.slice(-50);
-                }
-                
-                localStorage.setItem('recentItems', JSON.stringify(recentItems));
-            } catch (e) {
-                console.log('Failed to save to localStorage:', e);
             }
         }
 
@@ -512,7 +526,7 @@
                 }
             }
 
-            showDebugInfo(`Outfit generated using ${itemsUsed} items`);
+            showDebugInfo(`✨ Outfit generated using ${itemsUsed} items`);
         }
 
         function addClothingSpot(canvas, item, position) {
@@ -536,6 +550,91 @@
             
             div.innerHTML = `<img src="${item.url}" alt="${item.category}">`;
             canvas.appendChild(div);
+        }
+
+        function toggleItemList() {
+            const listDiv = document.getElementById('itemList');
+            const btn = event.target;
+            
+            if (!itemListVisible) {
+                displayItemList();
+                listDiv.style.display = 'block';
+                btn.textContent = 'Hide Items';
+                itemListVisible = true;
+            } else {
+                listDiv.style.display = 'none';
+                btn.textContent = 'View & Edit All Items';
+                itemListVisible = false;
+            }
+        }
+
+        function displayItemList() {
+            const listDiv = document.getElementById('itemList');
+            
+            if (items.length === 0) {
+                listDiv.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">📦 No items uploaded yet</p>';
+            } else {
+                let html = '<h4 style="margin-bottom: 10px;">📋 All Uploaded Items:</h4>';
+                items.forEach((item, index) => {
+                    const uploadDate = item.uploadDate ? new Date(item.uploadDate).toLocaleDateString() : 'Unknown';
+                    html += `
+                        <div class="item-card" data-index="${index}">
+                            <img src="${item.url}" alt="${item.category}">
+                            <div class="item-info">
+                                <strong>${item.category.charAt(0).toUpperCase() + item.category.slice(1)}</strong><br>
+                                <small>Added: ${uploadDate}</small><br>
+                                ${item.link ? `<a href="${item.link}" target="_blank" style="font-size: 10px; color: #007AFF;">🔗 View Link</a>` : '<span style="font-size: 10px; color: #999;">No link</span>'}
+                            </div>
+                            <div class="item-actions">
+                                <button class="edit-btn" onclick="editItem(${index})">✏️ Edit</button>
+                                <button class="delete-btn" onclick="deleteItem(${index})">🗑️ Delete</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                listDiv.innerHTML = html;
+            }
+        }
+
+        function editItem(index) {
+            const item = items[index];
+            const newLink = prompt(
+                `Edit shopping link for this ${item.category}:\n\nCurrent link: ${item.link || 'None'}\n\nEnter new link (or leave empty to remove):`, 
+                item.link || ''
+            );
+            
+            if (newLink !== null) {
+                // Update the item
+                items[index].link = newLink.trim() || null;
+                
+                // Save changes
+                saveItems();
+                
+                // Refresh the display
+                displayItemList();
+                
+                showDebugInfo(`✏️ Updated link for ${item.category}: ${items[index].link || 'removed'}`);
+                showUploadStatus('Item link updated successfully!', 'success');
+            }
+        }
+
+        function deleteItem(index) {
+            const item = items[index];
+            
+            if (confirm(`🗑️ Delete this ${item.category} item?\n\nThis will remove it from outfit rotations.\nThis cannot be undone.`)) {
+                // Remove from items array
+                const deletedItem = items.splice(index, 1)[0];
+                
+                // Save changes
+                saveItems();
+                
+                // Update displays
+                updateItemCount();
+                displayItemList();
+                
+                showDebugInfo(`🗑️ Deleted: ${deletedItem.category} (${deletedItem.id})`);
+                showUploadStatus('Item deleted successfully!', 'success');
+            }
         }
 
         function updateItemCount() {
@@ -608,95 +707,6 @@
             }
             
             alert('To save your outfit:\n\n📱 iPhone: Press Volume Up + Power button\n🤖 Android: Press Volume Down + Power button\n\nThis will screenshot the outfit area perfectly!');
-        }
-
-        function showItemList() {
-            const listDiv = document.getElementById('itemList');
-            const btn = event.target;
-            
-            if (listDiv.style.display === 'none') {
-                displayItemList();
-                listDiv.style.display = 'block';
-                btn.textContent = 'Hide Items';
-            } else {
-                listDiv.style.display = 'none';
-                btn.textContent = 'View/Edit Items';
-            }
-        }
-
-        function displayItemList() {
-            const listDiv = document.getElementById('itemList');
-            
-            if (items.length === 0) {
-                listDiv.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No items yet</p>';
-            } else {
-                let html = '';
-                items.forEach((item, index) => {
-                    html += `
-                        <div class="item-card" data-index="${index}">
-                            <img src="${item.url}" alt="${item.category}">
-                            <div class="item-info">
-                                <strong>${item.category.charAt(0).toUpperCase() + item.category.slice(1)}</strong><br>
-                                <small>ID: ${item.id.split('/').pop()}</small><br>
-                                ${item.link ? `<a href="${item.link}" target="_blank" style="font-size: 10px; color: #007AFF;">View Link</a>` : '<span style="font-size: 10px; color: #999;">No link</span>'}
-                            </div>
-                            <div class="item-actions">
-                                <button class="edit-btn" onclick="editItem(${index})">Edit</button>
-                                <button class="delete-btn" onclick="deleteItem(${index})">Delete</button>
-                            </div>
-                        </div>
-                    `;
-                });
-                listDiv.innerHTML = html;
-            }
-        }
-
-        function editItem(index) {
-            const item = items[index];
-            const newLink = prompt('Edit shopping link (leave empty to remove):', item.link || '');
-            
-            if (newLink !== null) {
-                // Update the item
-                items[index].link = newLink.trim() || null;
-                
-                // Save to localStorage
-                saveItemsToStorage();
-                
-                // Refresh the display
-                displayItemList();
-                
-                showDebugInfo(`Updated item ${index}. Link changed to: ${items[index].link || 'none'}`);
-                showUploadStatus('Item link updated successfully!', 'success');
-            }
-        }
-
-        function deleteItem(index) {
-            const item = items[index];
-            
-            if (confirm(`Delete this ${item.category} item? This cannot be undone.`)) {
-                // Remove from items array
-                const deletedItem = items.splice(index, 1)[0];
-                
-                // Save to localStorage
-                saveItemsToStorage();
-                
-                // Update count and refresh display
-                updateItemCount();
-                displayItemList();
-                
-                showDebugInfo(`Deleted item: ${deletedItem.id}`);
-                showUploadStatus('Item deleted successfully!', 'success');
-            }
-        }
-
-        function saveItemsToStorage() {
-            try {
-                // Save current items to localStorage
-                localStorage.setItem('recentItems', JSON.stringify(items));
-                showDebugInfo('Items saved to local storage');
-            } catch (e) {
-                console.log('Failed to save to localStorage:', e);
-            }
         }
     </script>
 </body>
