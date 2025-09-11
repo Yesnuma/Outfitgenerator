@@ -136,7 +136,6 @@
             margin: 5px;
         }
 
-        /* Hidden admin elements */
         .admin-btn {
             position: fixed;
             top: 10px;
@@ -286,7 +285,6 @@
     </style>
 </head>
 <body>
-    <!-- Hidden admin button - only appears after secret clicks -->
     <button class="admin-btn" id="adminBtn" onclick="toggleAdmin()">Admin</button>
 
     <div class="container">
@@ -312,10 +310,9 @@
             </div>
         </div>
 
-        <!-- Hidden admin panel -->
         <div class="admin-panel" id="adminPanel">
-            <h3>Add Item (Cloud Storage)</h3>
-            <input type="file" id="fileInput" accept="image/*" placeholder="Select image">
+            <h3>Add Item (Cloudinary Storage)</h3>
+            <input type="file" id="fileInput" accept="image/*">
             <select id="categoryInput">
                 <option value="">Select Category</option>
                 <option value="bags">Bags</option>
@@ -326,9 +323,9 @@
                 <option value="shoes">Shoes</option>
                 <option value="boots">Boots</option>
             </select>
-            <input type="url" id="linkInput" placeholder="Shopping link (eBay, Depop, etc.) - Optional">
+            <input type="url" id="linkInput" placeholder="Shopping link (optional)">
             <div id="uploadStatus" class="upload-status" style="display: none;"></div>
-            <button onclick="addItem()">Upload to Cloud</button>
+            <button onclick="addItem()">Upload to Cloudinary</button>
             <p>Items in cloud: <span id="itemCount">0</span></p>
             
             <hr style="margin: 20px 0; border: 1px solid #ccc;">
@@ -349,64 +346,21 @@
     </div>
 
     <script>
-        // Your actual Cloudinary configuration
+        // Your Cloudinary configuration
         const CLOUDINARY_CLOUD_NAME = 'dpykewcjw';
         const CLOUDINARY_UPLOAD_PRESET = 'outfitgenerator';
-
+        
+        // Simple in-memory storage - no localStorage complications
         let items = [];
         let clickCount = 0;
         let lastClickTime = 0;
 
-        // Fixed localStorage handling to prevent DataClone errors
-        function saveItemsToStorage() {
-            try {
-                // Clean the items array to prevent serialization issues
-                const itemsToSave = items.map(item => ({
-                    category: String(item.category || ''),
-                    url: String(item.url || ''),
-                    link: item.link ? String(item.link) : null,
-                    id: Number(item.id) || Date.now(),
-                    cloudinary_id: item.cloudinary_id ? String(item.cloudinary_id) : null
-                }));
-                
-                localStorage.setItem('outfitGeneratorItems', JSON.stringify(itemsToSave));
-                return true;
-            } catch (error) {
-                console.error('Storage save failed:', error);
-                return false;
-            }
-        }
-
-        function loadItemsFromStorage() {
-            try {
-                const savedItems = localStorage.getItem('outfitGeneratorItems');
-                if (savedItems) {
-                    const parsed = JSON.parse(savedItems);
-                    if (Array.isArray(parsed)) {
-                        items = parsed;
-                        updateItemCount();
-                        return true;
-                    }
-                }
-            } catch (error) {
-                console.error('Storage load failed:', error);
-            }
-            items = [];
-            return false;
-        }
-
         function clearAllData() {
-            if (confirm('This will delete all stored items and start fresh. Continue?')) {
-                try {
-                    localStorage.removeItem('outfitGeneratorItems');
-                    items = [];
-                    updateItemCount();
-                    displayItemList();
-                    showUploadStatus('All data cleared. Ready for cloud uploads.', 'success');
-                } catch (error) {
-                    console.error('Clear error:', error);
-                    showUploadStatus('Error clearing data', 'error');
-                }
+            if (confirm('This will clear all items from memory. Continue?')) {
+                items = [];
+                updateItemCount();
+                displayItemList();
+                showUploadStatus('All data cleared from memory.', 'success');
             }
         }
 
@@ -424,9 +378,6 @@
                 statusDiv.style.display = 'none';
             }, 5000);
         }
-
-        // Load items when page loads
-        window.addEventListener('load', loadItemsFromStorage);
 
         function secretClick() {
             const now = Date.now();
@@ -468,28 +419,21 @@
             }
 
             if (link && !isValidURL(link)) {
-                showUploadStatus('Please enter a valid URL (must start with http:// or https://)', 'error');
+                showUploadStatus('Please enter a valid URL', 'error');
                 return;
             }
 
             showUploadStatus('Uploading to Cloudinary...', 'success');
 
-            // Upload to your actual Cloudinary account
             const formData = new FormData();
             formData.append('file', file);
             formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-            formData.append('folder', 'outfit-items');
 
             fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
                 method: 'POST',
                 body: formData
             })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
                 if (data.secure_url) {
                     const newItem = {
@@ -508,26 +452,19 @@
                     document.getElementById('categoryInput').value = '';
                     document.getElementById('linkInput').value = '';
                     
-                    // Save to localStorage for persistence
-                    const saveSuccess = saveItemsToStorage();
-                    
                     // Refresh item list if shown
                     if (document.getElementById('itemList').style.display !== 'none') {
                         displayItemList();
                     }
                     
-                    if (saveSuccess) {
-                        showUploadStatus('Successfully uploaded to Cloudinary and saved!', 'success');
-                    } else {
-                        showUploadStatus('Uploaded to Cloudinary but local save failed', 'error');
-                    }
+                    showUploadStatus('Successfully uploaded to Cloudinary!', 'success');
                 } else {
-                    throw new Error('Upload failed: ' + (data.error?.message || 'Unknown error'));
+                    throw new Error('Upload failed');
                 }
             })
             .catch(error => {
                 console.error('Upload error:', error);
-                showUploadStatus('Upload failed: ' + error.message, 'error');
+                showUploadStatus('Upload failed. Check your connection.', 'error');
             });
         }
 
@@ -563,8 +500,8 @@
                 let html = '';
                 items.forEach((item, index) => {
                     html += `
-                        <div class="item-card" data-index="${index}">
-                            <img src="${item.url}" alt="${item.category}" style="width: 50px; height: 50px; object-fit: cover;">
+                        <div class="item-card">
+                            <img src="${item.url}" alt="${item.category}">
                             <div class="item-info">
                                 <strong>${item.category.charAt(0).toUpperCase() + item.category.slice(1)}</strong><br>
                                 ${item.link ? `<a href="${item.link}" target="_blank" style="font-size: 10px; color: #007AFF;">View Link</a>` : '<span style="font-size: 10px; color: #999;">No link</span>'}
@@ -581,13 +518,9 @@
         }
 
         function deleteItem(index) {
-            if (confirm('Delete this item?')) {
-                items.splice(index, 1);
-                updateItemCount();
-                saveItemsToStorage();
-                displayItemList();
-                showUploadStatus('Item deleted successfully!', 'success');
-            }
+            items.splice(index, 1);
+            updateItemCount();
+            displayItemList();
         }
 
         function editItem(index) {
@@ -596,15 +529,14 @@
             
             if (newLink !== null) {
                 items[index].link = newLink.trim() || null;
-                saveItemsToStorage();
                 displayItemList();
-                showUploadStatus('Link updated successfully!', 'success');
+                showUploadStatus('Link updated!', 'success');
             }
         }
 
         function generateOutfit() {
             if (items.length === 0) {
-                alert('No items yet! Use the secret admin panel to add clothing items.');
+                alert('No items yet! Use the admin panel to add clothing items.');
                 return;
             }
 
@@ -621,7 +553,6 @@
                 boots: { bottom: '25px', left: '50%', transform: 'translateX(-50%)', width: '140px', height: '100px', zIndex: '1' }
             };
 
-            // Random choice for dress vs separates
             let dressGenerated = false;
             const dressItems = items.filter(item => item.category === 'dresses');
             
@@ -650,7 +581,6 @@
                 dressGenerated = true;
             }
 
-            // Generate other items (skip tops/bottoms if dress generated)
             Object.keys(positions).forEach(category => {
                 if (category === 'dresses') return;
                 if ((category === 'bottoms' || category === 'tops') && dressGenerated) return;
@@ -681,7 +611,6 @@
                 }
             });
 
-            // Handle footwear logic
             const hasShoes = items.some(item => item.category === 'shoes');
             const hasBoots = items.some(item => item.category === 'boots');
             
@@ -703,7 +632,7 @@
                 return;
             }
             
-            alert('To save your outfit:\n\n📱 iPhone: Press Volume Up + Power button\n🤖 Android: Press Volume Down + Power button\n\nThis will screenshot the outfit area perfectly!');
+            alert('To save your outfit:\n\nPress Volume Up + Power button (iPhone)\nPress Volume Down + Power button (Android)');
         }
     </script>
 </body>
