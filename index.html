@@ -352,10 +352,57 @@
         let clickCount = 0;
         let lastClickTime = 0;
 
+        // Safe storage functions
+        function saveItems() {
+            try {
+                const itemsToSave = [];
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    itemsToSave.push({
+                        category: String(item.category || ''),
+                        url: String(item.url || ''),
+                        link: item.link ? String(item.link) : null,
+                        id: Number(item.id) || Date.now()
+                    });
+                }
+                localStorage.setItem('outfitItems', JSON.stringify(itemsToSave));
+                return true;
+            } catch (error) {
+                console.error('Save failed:', error);
+                return false;
+            }
+        }
+
+        function loadItems() {
+            try {
+                const saved = localStorage.getItem('outfitItems');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed)) {
+                        items = parsed;
+                        updateItemCount();
+                        return true;
+                    }
+                }
+            } catch (error) {
+                console.error('Load failed:', error);
+            }
+            items = [];
+            return false;
+        }
+
+        // Load items when page loads
+        window.addEventListener('load', loadItems);
+
         function clearAllData() {
             items = [];
             updateItemCount();
             displayItemList();
+            try {
+                localStorage.removeItem('outfitItems');
+            } catch (error) {
+                console.error('Clear failed:', error);
+            }
             showUploadStatus('All data cleared.', 'success');
         }
 
@@ -427,6 +474,8 @@
             const formData = new FormData();
             formData.append('file', file);
             formData.append('upload_preset', UPLOAD_PRESET);
+            formData.append('tags', 'outfit-item');
+            formData.append('context', 'category=' + category + '|link=' + (link || ''));
 
             fetch('https://api.cloudinary.com/v1_1/' + CLOUD_NAME + '/image/upload', {
                 method: 'POST',
