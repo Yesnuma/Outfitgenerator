@@ -502,6 +502,9 @@
                     items.push(newItem);
                     updateItemCount();
                     
+                    // Save to localStorage immediately
+                    saveToLocalStorage();
+                    
                     // Clear form
                     document.getElementById('fileInput').value = '';
                     document.getElementById('categoryInput').value = '';
