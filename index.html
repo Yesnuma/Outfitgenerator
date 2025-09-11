@@ -573,11 +573,6 @@
 
         // Upload new item
         async function addItem() {
-            if (!isSetup) {
-                showStatus('Please setup GitHub database first', 'error');
-                return;
-            }
-
             const file = document.getElementById('fileInput').files[0];
             const category = document.getElementById('categoryInput').value;
             const link = document.getElementById('linkInput').value.trim();
@@ -639,7 +634,7 @@
                     document.getElementById('categoryInput').value = '';
                     document.getElementById('linkInput').value = '';
                     
-                    showStatus('✅ Item uploaded! Now available to everyone worldwide.', 'success');
+                    showStatus('Item uploaded! Now available to everyone worldwide.', 'success');
                 } else {
                     // Remove from local array if save failed
                     items.pop();
@@ -648,7 +643,7 @@
 
             } catch (error) {
                 console.error('Upload error:', error);
-                showStatus(`❌ Upload failed: ${error.message}`, 'error');
+                showStatus(`Upload failed: ${error.message}`, 'error');
             }
         }
 
