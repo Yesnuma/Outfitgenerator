@@ -209,6 +209,15 @@
             border: 1px solid #f5c6cb;
         }
 
+        .setup-notice {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            color: #856404;
+        }
+
         .item-card {
             background: white;
             border: 1px solid #ddd;
@@ -284,6 +293,16 @@
         </div>
 
         <div class="admin-panel" id="adminPanel">
+            <div class="setup-notice" id="setupNotice">
+                <strong>⚙️ First Time Setup:</strong><br>
+                Go to <a href="https://jsonbin.io" target="_blank">JSONBin.io</a> → Sign up (free) → Get your API key → Enter it below to enable storage.
+            </div>
+            
+            <input type="text" id="apiKeyInput" placeholder="Enter your JSONBin.io API key" style="margin-bottom: 10px;">
+            <button onclick="setupDatabase()" style="background: #4CAF50 !important; margin-bottom: 15px;">Setup Database</button>
+            
+            <hr style="margin: 15px 0;">
+            
             <h3>Add New Item</h3>
             <input type="file" id="fileInput" accept="image/*">
             <select id="categoryInput">
@@ -301,11 +320,10 @@
             <button onclick="addItem()">Upload Item</button>
             <p>Items available: <span id="itemCount">0</span></p>
             
-            <hr style="margin: 20px 0;">
+            <hr style="margin: 15px 0;">
             
             <h3>Manage Items</h3>
             <button class="manage-btn" onclick="toggleItemList()">View & Edit Items</button>
-            <button onclick="reloadItems()" style="background: #17a2b8 !important;">Reload from Cloud</button>
             <div id="itemList" style="display: none; max-height: 300px; overflow-y: auto; margin-top: 10px; background: white; border-radius: 5px; padding: 10px;"></div>
         </div>
 
@@ -322,37 +340,140 @@
         const CLOUD_NAME = 'dpykewcjw';
         const UPLOAD_PRESET = 'Outfitgenerator';
 
+        // Database configuration
+        let API_KEY = '';
+        let BIN_ID = '';
+
         // Global state
         let items = [];
         let clickCount = 0;
         let lastClickTime = 0;
+        let isSetup = false;
 
         // Initialize when page loads
         window.addEventListener('load', () => {
-            console.log('Page loaded, initializing...');
-            loadKnownItems();
-            updateItemCount();
+            console.log('Page loaded, checking setup...');
+            checkSetup();
         });
 
-        // Load known items (manual database for now - most reliable approach)
-        function loadKnownItems() {
-            // These are the items you've already uploaded to Cloudinary
-            // Add new items here manually as you upload them
-            items = [
-                // Example format:
-                // {
-                //     id: 'outfit-generator/your-item-id',
-                //     category: 'tops',
-                //     link: 'https://depop.com/your-link',
-                //     url: 'https://res.cloudinary.com/dpykewcjw/image/upload/w_400,h_400,c_fit/outfit-generator/your-item-id.jpg'
-                // }
-            ];
+        // Check if database is set up
+        function checkSetup() {
+            // Check if we have saved credentials
+            API_KEY = localStorage.getItem('jsonbin_api_key');
+            BIN_ID = localStorage.getItem('jsonbin_bin_id');
             
-            console.log(`Loaded ${items.length} items`);
+            if (API_KEY && BIN_ID) {
+                isSetup = true;
+                document.getElementById('setupNotice').style.display = 'none';
+                document.getElementById('apiKeyInput').style.display = 'none';
+                document.querySelector('button[onclick="setupDatabase()"]').style.display = 'none';
+                loadItems();
+            } else {
+                showStatus('Database setup required', 'error');
+            }
         }
 
-        // Upload new item to Cloudinary
+        // Set up the database
+        async function setupDatabase() {
+            const apiKey = document.getElementById('apiKeyInput').value.trim();
+            
+            if (!apiKey) {
+                showStatus('Please enter your JSONBin.io API key', 'error');
+                return;
+            }
+
+            showStatus('Setting up database...', 'success');
+
+            try {
+                // Create a new bin for storing items
+                const response = await fetch('https://api.jsonbin.io/v3/b', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': apiKey
+                    },
+                    body: JSON.stringify([]) // Start with empty array
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    API_KEY = apiKey;
+                    BIN_ID = result.metadata.id;
+                    
+                    // Save credentials
+                    localStorage.setItem('jsonbin_api_key', API_KEY);
+                    localStorage.setItem('jsonbin_bin_id', BIN_ID);
+                    
+                    isSetup = true;
+                    
+                    // Hide setup UI
+                    document.getElementById('setupNotice').style.display = 'none';
+                    document.getElementById('apiKeyInput').style.display = 'none';
+                    document.querySelector('button[onclick="setupDatabase()"]').style.display = 'none';
+                    
+                    showStatus('✅ Database setup complete! You can now add items.', 'success');
+                    updateItemCount();
+                } else {
+                    throw new Error('Invalid API key or setup failed');
+                }
+            } catch (error) {
+                showStatus('❌ Setup failed. Check your API key and try again.', 'error');
+            }
+        }
+
+        // Load items from database
+        async function loadItems() {
+            if (!isSetup) return;
+
+            try {
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+                    headers: {
+                        'X-Master-Key': API_KEY
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    items = result.record || [];
+                    updateItemCount();
+                    console.log(`Loaded ${items.length} items from database`);
+                } else {
+                    console.error('Failed to load items');
+                }
+            } catch (error) {
+                console.error('Error loading items:', error);
+            }
+        }
+
+        // Save items to database
+        async function saveItems() {
+            if (!isSetup) return false;
+
+            try {
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': API_KEY
+                    },
+                    body: JSON.stringify(items)
+                });
+
+                return response.ok;
+            } catch (error) {
+                console.error('Error saving items:', error);
+                return false;
+            }
+        }
+
+        // Upload new item
         async function addItem() {
+            if (!isSetup) {
+                showStatus('Please setup the database first', 'error');
+                return;
+            }
+
             const file = document.getElementById('fileInput').files[0];
             const category = document.getElementById('categoryInput').value;
             const link = document.getElementById('linkInput').value.trim();
@@ -370,18 +491,13 @@
             showStatus('Uploading to Cloudinary...', 'success');
 
             try {
-                // Create unique filename
-                const timestamp = Date.now();
-                const filename = `item_${category}_${timestamp}`;
-
+                // Step 1: Upload to Cloudinary
                 const formData = new FormData();
                 formData.append('file', file);
                 formData.append('upload_preset', UPLOAD_PRESET);
                 formData.append('folder', 'outfit-generator');
-                formData.append('public_id', `outfit-generator/${filename}`);
-                formData.append('tags', `outfit,${category}`);
 
-                const response = await fetch(
+                const cloudinaryResponse = await fetch(
                     `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
                     {
                         method: 'POST',
@@ -389,19 +505,29 @@
                     }
                 );
 
-                if (response.ok) {
-                    const result = await response.json();
-                    
-                    // Create new item
-                    const newItem = {
-                        id: result.public_id,
-                        category: category,
-                        link: link || null,
-                        url: `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_400,h_400,c_fit/${result.public_id}.jpg`
-                    };
-                    
-                    // Add to items array
-                    items.push(newItem);
+                if (!cloudinaryResponse.ok) {
+                    throw new Error('Cloudinary upload failed');
+                }
+
+                const cloudinaryResult = await cloudinaryResponse.json();
+                
+                showStatus('Saving to database...', 'success');
+
+                // Step 2: Create item record
+                const newItem = {
+                    id: Date.now().toString(),
+                    category: category,
+                    link: link || null,
+                    imageUrl: `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_400,h_400,c_fit/${cloudinaryResult.public_id}.jpg`,
+                    cloudinaryId: cloudinaryResult.public_id,
+                    uploadDate: new Date().toISOString()
+                };
+
+                // Step 3: Add to items and save to database
+                items.push(newItem);
+                const saveSuccess = await saveItems();
+
+                if (saveSuccess) {
                     updateItemCount();
                     
                     // Clear form
@@ -409,30 +535,13 @@
                     document.getElementById('categoryInput').value = '';
                     document.getElementById('linkInput').value = '';
                     
-                    // Show success and instructions
-                    showStatus(`✅ Uploaded successfully!`, 'success');
-                    
-                    // Show the code to add permanently
-                    alert(`Item uploaded to Cloudinary!
-
-To make this item permanent for everyone:
-
-Copy this code and add it to the items array in the code:
-
-{
-    id: '${result.public_id}',
-    category: '${category}',
-    link: ${link ? `'${link}'` : 'null'},
-    url: '${newItem.url}'
-},
-
-The item is now available in this session and will appear in outfit generation.`);
-                    
+                    showStatus('✅ Item uploaded successfully! Available to everyone now.', 'success');
                 } else {
-                    const error = await response.json();
-                    throw new Error(error.error?.message || 'Upload failed');
+                    // Remove from local array if database save failed
+                    items.pop();
+                    throw new Error('Database save failed');
                 }
-                
+
             } catch (error) {
                 console.error('Upload error:', error);
                 showStatus(`❌ Upload failed: ${error.message}`, 'error');
@@ -442,7 +551,7 @@ The item is now available in this session and will appear in outfit generation.`
         // Generate outfit
         function generateOutfit() {
             if (items.length === 0) {
-                alert('No items available! Upload some items first.');
+                alert('No items available! Add some items first or check your internet connection.');
                 return;
             }
 
@@ -512,7 +621,7 @@ The item is now available in this session and will appear in outfit generation.`
                 div.title = 'Click to shop this item';
             }
             
-            div.innerHTML = `<img src="${item.url}" alt="${item.category}">`;
+            div.innerHTML = `<img src="${item.imageUrl}" alt="${item.category}">`;
             canvas.appendChild(div);
         }
 
@@ -538,11 +647,13 @@ The item is now available in this session and will appear in outfit generation.`
             } else {
                 let html = '<h4>All Items:</h4>';
                 items.forEach((item, index) => {
+                    const uploadDate = new Date(item.uploadDate).toLocaleDateString();
                     html += `
                         <div class="item-card">
-                            <img src="${item.url}" alt="${item.category}">
+                            <img src="${item.imageUrl}" alt="${item.category}">
                             <div class="item-info">
                                 <strong>${item.category.charAt(0).toUpperCase() + item.category.slice(1)}</strong><br>
+                                <small>Added: ${uploadDate}</small><br>
                                 ${item.link ? `<a href="${item.link}" target="_blank" style="font-size: 10px; color: #007AFF;">View Link</a>` : '<span style="font-size: 10px; color: #999;">No link</span>'}
                             </div>
                             <div class="item-actions">
@@ -556,30 +667,36 @@ The item is now available in this session and will appear in outfit generation.`
             }
         }
 
-        function editItem(index) {
+        async function editItem(index) {
             const item = items[index];
             const newLink = prompt('Edit shopping link:', item.link || '');
             
             if (newLink !== null) {
                 items[index].link = newLink.trim() || null;
-                displayItemList();
-                showStatus('Link updated in current session', 'success');
+                const success = await saveItems();
+                
+                if (success) {
+                    displayItemList();
+                    showStatus('Link updated successfully!', 'success');
+                } else {
+                    showStatus('Failed to save changes', 'error');
+                }
             }
         }
 
-        function deleteItem(index) {
-            if (confirm('Delete this item from the current session?')) {
+        async function deleteItem(index) {
+            if (confirm('Delete this item? This will remove it for everyone.')) {
                 items.splice(index, 1);
-                updateItemCount();
-                displayItemList();
-                showStatus('Item deleted from current session', 'success');
+                const success = await saveItems();
+                
+                if (success) {
+                    updateItemCount();
+                    displayItemList();
+                    showStatus('Item deleted successfully', 'success');
+                } else {
+                    showStatus('Failed to delete item', 'error');
+                }
             }
-        }
-
-        function reloadItems() {
-            loadKnownItems();
-            updateItemCount();
-            showStatus('Items reloaded', 'success');
         }
 
         function updateItemCount() {
@@ -643,7 +760,7 @@ The item is now available in this session and will appear in outfit generation.`
                 return;
             }
             
-            alert('To save:\n\n📱 iPhone: Volume Up + Power\n🤖 Android: Volume Down + Power\n\nThis screenshots perfectly!');
+            alert('To save:\n\n📱 iPhone: Volume Up + Power\n🤖 Android: Volume Down + Power');
         }
     </script>
 </body>
