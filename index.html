@@ -21,7 +21,6 @@
             font-family: Arial, sans-serif;
         }
 
-        /* Use the star background pattern as pseudo-element */
         body::before {
             content: "";
             position: fixed;
@@ -346,22 +345,18 @@
     </div>
 
     <script>
-        // Your Cloudinary configuration
-        const CLOUDINARY_CLOUD_NAME = 'dpykewcjw';
-        const CLOUDINARY_UPLOAD_PRESET = 'outfitgenerator';
+        const CLOUD_NAME = 'dpykewcjw';
+        const UPLOAD_PRESET = 'Outfitgenerator';
         
-        // Simple in-memory storage - no localStorage complications
         let items = [];
         let clickCount = 0;
         let lastClickTime = 0;
 
         function clearAllData() {
-            if (confirm('This will clear all items from memory. Continue?')) {
-                items = [];
-                updateItemCount();
-                displayItemList();
-                showUploadStatus('All data cleared from memory.', 'success');
-            }
+            items = [];
+            updateItemCount();
+            displayItemList();
+            showUploadStatus('All data cleared.', 'success');
         }
 
         function updateItemCount() {
@@ -371,10 +366,10 @@
         function showUploadStatus(message, type) {
             const statusDiv = document.getElementById('uploadStatus');
             statusDiv.textContent = message;
-            statusDiv.className = `upload-status ${type}`;
+            statusDiv.className = 'upload-status ' + type;
             statusDiv.style.display = 'block';
             
-            setTimeout(() => {
+            setTimeout(function() {
                 statusDiv.style.display = 'none';
             }, 5000);
         }
@@ -409,17 +404,21 @@
         }
 
         function addItem() {
-            const file = document.getElementById('fileInput').files[0];
-            const category = document.getElementById('categoryInput').value;
-            const link = document.getElementById('linkInput').value.trim();
+            const fileInput = document.getElementById('fileInput');
+            const categoryInput = document.getElementById('categoryInput');
+            const linkInput = document.getElementById('linkInput');
+            
+            const file = fileInput.files[0];
+            const category = categoryInput.value;
+            const link = linkInput.value.trim();
             
             if (!file || !category) {
                 showUploadStatus('Please select both a file and category', 'error');
                 return;
             }
 
-            if (link && !isValidURL(link)) {
-                showUploadStatus('Please enter a valid URL', 'error');
+            if (link && !link.startsWith('http')) {
+                showUploadStatus('Please enter a valid URL starting with http', 'error');
                 return;
             }
 
@@ -427,32 +426,31 @@
 
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+            formData.append('upload_preset', UPLOAD_PRESET);
 
-            fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+            fetch('https://api.cloudinary.com/v1_1/' + CLOUD_NAME + '/image/upload', {
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
-            .then(data => {
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
                 if (data.secure_url) {
                     const newItem = {
                         category: category,
                         url: data.secure_url,
                         link: link || null,
-                        id: Date.now(),
-                        cloudinary_id: data.public_id
+                        id: Date.now()
                     };
                     
                     items.push(newItem);
                     updateItemCount();
                     
-                    // Clear form
-                    document.getElementById('fileInput').value = '';
-                    document.getElementById('categoryInput').value = '';
-                    document.getElementById('linkInput').value = '';
+                    fileInput.value = '';
+                    categoryInput.value = '';
+                    linkInput.value = '';
                     
-                    // Refresh item list if shown
                     if (document.getElementById('itemList').style.display !== 'none') {
                         displayItemList();
                     }
@@ -462,19 +460,10 @@
                     throw new Error('Upload failed');
                 }
             })
-            .catch(error => {
+            .catch(function(error) {
                 console.error('Upload error:', error);
-                showUploadStatus('Upload failed. Check your connection.', 'error');
+                showUploadStatus('Upload failed. Check console for details.', 'error');
             });
-        }
-
-        function isValidURL(string) {
-            try {
-                new URL(string);
-                return string.startsWith('http://') || string.startsWith('https://');
-            } catch (_) {
-                return false;
-            }
         }
 
         function showItemList() {
@@ -498,21 +487,24 @@
                 listDiv.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No items yet</p>';
             } else {
                 let html = '';
-                items.forEach((item, index) => {
-                    html += `
-                        <div class="item-card">
-                            <img src="${item.url}" alt="${item.category}">
-                            <div class="item-info">
-                                <strong>${item.category.charAt(0).toUpperCase() + item.category.slice(1)}</strong><br>
-                                ${item.link ? `<a href="${item.link}" target="_blank" style="font-size: 10px; color: #007AFF;">View Link</a>` : '<span style="font-size: 10px; color: #999;">No link</span>'}
-                            </div>
-                            <div class="item-actions">
-                                <button class="edit-btn" onclick="editItem(${index})">Edit</button>
-                                <button class="delete-btn" onclick="deleteItem(${index})">Delete</button>
-                            </div>
-                        </div>
-                    `;
-                });
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    html += '<div class="item-card">';
+                    html += '<img src="' + item.url + '" alt="' + item.category + '">';
+                    html += '<div class="item-info">';
+                    html += '<strong>' + item.category.charAt(0).toUpperCase() + item.category.slice(1) + '</strong><br>';
+                    if (item.link) {
+                        html += '<a href="' + item.link + '" target="_blank" style="font-size: 10px; color: #007AFF;">View Link</a>';
+                    } else {
+                        html += '<span style="font-size: 10px; color: #999;">No link</span>';
+                    }
+                    html += '</div>';
+                    html += '<div class="item-actions">';
+                    html += '<button class="edit-btn" onclick="editItem(' + i + ')">Edit</button>';
+                    html += '<button class="delete-btn" onclick="deleteItem(' + i + ')">Delete</button>';
+                    html += '</div>';
+                    html += '</div>';
+                }
                 listDiv.innerHTML = html;
             }
         }
@@ -554,7 +546,7 @@
             };
 
             let dressGenerated = false;
-            const dressItems = items.filter(item => item.category === 'dresses');
+            const dressItems = items.filter(function(item) { return item.category === 'dresses'; });
             
             if (dressItems.length > 0 && Math.random() < 0.5) {
                 const randomDress = dressItems[Math.floor(Math.random() * dressItems.length)];
@@ -563,9 +555,12 @@
                 div.className = 'clothing-spot';
                 
                 const pos = positions['dresses'];
-                Object.keys(pos).forEach(style => {
-                    div.style[style] = pos[style];
-                });
+                div.style.top = pos.top;
+                div.style.left = pos.left;
+                div.style.transform = pos.transform;
+                div.style.width = pos.width;
+                div.style.height = pos.height;
+                div.style.zIndex = pos.zIndex;
                 
                 if (randomDress.link) {
                     div.classList.add('clickable');
@@ -576,16 +571,18 @@
                     div.title = 'Click to shop this item';
                 }
                 
-                div.innerHTML = `<img src="${randomDress.url}" alt="dresses">`;
+                div.innerHTML = '<img src="' + randomDress.url + '" alt="dresses">';
                 canvas.appendChild(div);
                 dressGenerated = true;
             }
 
-            Object.keys(positions).forEach(category => {
-                if (category === 'dresses') return;
-                if ((category === 'bottoms' || category === 'tops') && dressGenerated) return;
+            const categories = ['tops', 'bottoms', 'bags', 'accessories', 'shoes', 'boots'];
+            for (let i = 0; i < categories.length; i++) {
+                const category = categories[i];
+                if (category === 'dresses') continue;
+                if ((category === 'bottoms' || category === 'tops') && dressGenerated) continue;
                 
-                const categoryItems = items.filter(item => item.category === category);
+                const categoryItems = items.filter(function(item) { return item.category === category; });
                 if (categoryItems.length > 0) {
                     const randomItem = categoryItems[Math.floor(Math.random() * categoryItems.length)];
                     
@@ -593,9 +590,14 @@
                     div.className = 'clothing-spot';
                     
                     const pos = positions[category];
-                    Object.keys(pos).forEach(style => {
-                        div.style[style] = pos[style];
-                    });
+                    div.style.top = pos.top || '';
+                    div.style.left = pos.left || '';
+                    div.style.right = pos.right || '';
+                    div.style.bottom = pos.bottom || '';
+                    div.style.transform = pos.transform || '';
+                    div.style.width = pos.width;
+                    div.style.height = pos.height;
+                    div.style.zIndex = pos.zIndex;
                     
                     if (randomItem.link) {
                         div.classList.add('clickable');
@@ -606,18 +608,18 @@
                         div.title = 'Click to shop this item';
                     }
                     
-                    div.innerHTML = `<img src="${randomItem.url}" alt="${category}">`;
+                    div.innerHTML = '<img src="' + randomItem.url + '" alt="' + category + '">';
                     canvas.appendChild(div);
                 }
-            });
+            }
 
-            const hasShoes = items.some(item => item.category === 'shoes');
-            const hasBoots = items.some(item => item.category === 'boots');
+            const hasShoes = items.some(function(item) { return item.category === 'shoes'; });
+            const hasBoots = items.some(function(item) { return item.category === 'boots'; });
             
             if (hasShoes && hasBoots) {
                 const showShoes = Math.random() < 0.5;
                 const hideCategory = showShoes ? 'boots' : 'shoes';
-                const hideElement = canvas.querySelector(`[alt="${hideCategory}"]`);
+                const hideElement = canvas.querySelector('[alt="' + hideCategory + '"]');
                 if (hideElement && hideElement.parentNode) {
                     hideElement.parentNode.remove();
                 }
