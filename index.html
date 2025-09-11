@@ -198,58 +198,6 @@
             font-size: 14px;
         }
 
-        .view-items-btn {
-            background: #007AFF !important;
-        }
-
-        .clear-data-btn {
-            background: #ff4444 !important;
-            margin-top: 10px;
-        }
-
-        .item-card {
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 10px;
-            margin: 5px 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .item-card img {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            border-radius: 3px;
-        }
-
-        .item-info {
-            flex: 1;
-            font-size: 12px;
-        }
-
-        .item-actions {
-            display: flex;
-            gap: 5px;
-        }
-
-        .item-actions button {
-            padding: 5px 8px;
-            font-size: 11px;
-            margin: 0;
-            width: auto;
-        }
-
-        .edit-btn {
-            background: #007AFF !important;
-        }
-
-        .delete-btn {
-            background: #ff4444 !important;
-        }
-
         .upload-status {
             margin: 10px 0;
             padding: 10px;
@@ -310,7 +258,7 @@
         </div>
 
         <div class="admin-panel" id="adminPanel">
-            <h3>Add Item (Cloudinary Storage)</h3>
+            <h3>Add Item</h3>
             <input type="file" id="fileInput" accept="image/*">
             <select id="categoryInput">
                 <option value="">Select Category</option>
@@ -324,19 +272,12 @@
             </select>
             <input type="url" id="linkInput" placeholder="Shopping link (optional)">
             <div id="uploadStatus" class="upload-status" style="display: none;"></div>
-            <button onclick="addItem()">Upload to Cloudinary</button>
-            <p>Items in cloud: <span id="itemCount">0</span></p>
-            
-            <hr style="margin: 20px 0; border: 1px solid #ccc;">
-            
-            <h3>Manage Items</h3>
-            <button class="view-items-btn" onclick="showItemList()">View All Items</button>
-            <button class="clear-data-btn" onclick="clearAllData()">Clear All Data</button>
-            <div id="itemList" style="display: none; max-height: 300px; overflow-y: auto; margin-top: 10px;"></div>
+            <button onclick="addItem()">Add Item</button>
+            <p>Items this session: <span id="itemCount">0</span></p>
         </div>
 
         <div class="canvas-container" id="outfitCanvas">
-            <!-- Generated outfit will appear here -->
+            Click "Generate" to create an outfit!
         </div>
 
         <button class="generate-btn" onclick="generateOutfit()">G̾e̾n̾e̾r̾a̾t̾e̾</button>
@@ -352,60 +293,6 @@
         let clickCount = 0;
         let lastClickTime = 0;
 
-        // Safe storage functions
-        function saveItems() {
-            try {
-                const itemsToSave = [];
-                for (let i = 0; i < items.length; i++) {
-                    const item = items[i];
-                    itemsToSave.push({
-                        category: String(item.category || ''),
-                        url: String(item.url || ''),
-                        link: item.link ? String(item.link) : null,
-                        id: Number(item.id) || Date.now()
-                    });
-                }
-                localStorage.setItem('outfitItems', JSON.stringify(itemsToSave));
-                return true;
-            } catch (error) {
-                console.error('Save failed:', error);
-                return false;
-            }
-        }
-
-        function loadItems() {
-            try {
-                const saved = localStorage.getItem('outfitItems');
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    if (Array.isArray(parsed)) {
-                        items = parsed;
-                        updateItemCount();
-                        return true;
-                    }
-                }
-            } catch (error) {
-                console.error('Load failed:', error);
-            }
-            items = [];
-            return false;
-        }
-
-        // Load items when page loads
-        window.addEventListener('load', loadItems);
-
-        function clearAllData() {
-            items = [];
-            updateItemCount();
-            displayItemList();
-            try {
-                localStorage.removeItem('outfitItems');
-            } catch (error) {
-                console.error('Clear failed:', error);
-            }
-            showUploadStatus('All data cleared.', 'success');
-        }
-
         function updateItemCount() {
             document.getElementById('itemCount').textContent = items.length;
         }
@@ -418,7 +305,7 @@
             
             setTimeout(function() {
                 statusDiv.style.display = 'none';
-            }, 5000);
+            }, 3000);
         }
 
         function secretClick() {
@@ -464,12 +351,7 @@
                 return;
             }
 
-            if (link && !link.startsWith('http')) {
-                showUploadStatus('Please enter a valid URL starting with http', 'error');
-                return;
-            }
-
-            showUploadStatus('Uploading to Cloudinary...', 'success');
+            showUploadStatus('Adding item...', 'success');
 
             const formData = new FormData();
             formData.append('file', file);
@@ -498,84 +380,20 @@
                     categoryInput.value = '';
                     linkInput.value = '';
                     
-                    if (document.getElementById('itemList').style.display !== 'none') {
-                        displayItemList();
-                    }
-                    
-                    showUploadStatus('Successfully uploaded to Cloudinary!', 'success');
+                    showUploadStatus('Item added successfully!', 'success');
                 } else {
                     throw new Error('Upload failed');
                 }
             })
             .catch(function(error) {
                 console.error('Upload error:', error);
-                showUploadStatus('Upload failed. Check console for details.', 'error');
+                showUploadStatus('Upload failed. Please try again.', 'error');
             });
-        }
-
-        function showItemList() {
-            const listDiv = document.getElementById('itemList');
-            const btn = document.querySelector('.view-items-btn');
-            
-            if (listDiv.style.display === 'none') {
-                displayItemList();
-                listDiv.style.display = 'block';
-                btn.textContent = 'Hide Items';
-            } else {
-                listDiv.style.display = 'none';
-                btn.textContent = 'View All Items';
-            }
-        }
-
-        function displayItemList() {
-            const listDiv = document.getElementById('itemList');
-            
-            if (items.length === 0) {
-                listDiv.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No items yet</p>';
-            } else {
-                let html = '';
-                for (let i = 0; i < items.length; i++) {
-                    const item = items[i];
-                    html += '<div class="item-card">';
-                    html += '<img src="' + item.url + '" alt="' + item.category + '">';
-                    html += '<div class="item-info">';
-                    html += '<strong>' + item.category.charAt(0).toUpperCase() + item.category.slice(1) + '</strong><br>';
-                    if (item.link) {
-                        html += '<a href="' + item.link + '" target="_blank" style="font-size: 10px; color: #007AFF;">View Link</a>';
-                    } else {
-                        html += '<span style="font-size: 10px; color: #999;">No link</span>';
-                    }
-                    html += '</div>';
-                    html += '<div class="item-actions">';
-                    html += '<button class="edit-btn" onclick="editItem(' + i + ')">Edit</button>';
-                    html += '<button class="delete-btn" onclick="deleteItem(' + i + ')">Delete</button>';
-                    html += '</div>';
-                    html += '</div>';
-                }
-                listDiv.innerHTML = html;
-            }
-        }
-
-        function deleteItem(index) {
-            items.splice(index, 1);
-            updateItemCount();
-            displayItemList();
-        }
-
-        function editItem(index) {
-            const item = items[index];
-            const newLink = prompt('Edit shopping link (leave empty to remove):', item.link || '');
-            
-            if (newLink !== null) {
-                items[index].link = newLink.trim() || null;
-                displayItemList();
-                showUploadStatus('Link updated!', 'success');
-            }
         }
 
         function generateOutfit() {
             if (items.length === 0) {
-                alert('No items yet! Use the admin panel to add clothing items.');
+                alert('No items yet! Click the title 5 times to access admin mode and add items.');
                 return;
             }
 
@@ -681,7 +499,7 @@
                 return;
             }
             
-            alert('To save your outfit:\n\nPress Volume Up + Power button (iPhone)\nPress Volume Down + Power button (Android)');
+            alert('To save your outfit:\n\nPress Volume Up + Power button (iPhone)\nPress Volume Down + Power button (Android)\n\nThis will screenshot the outfit area perfectly!');
         }
     </script>
 </body>
