@@ -537,22 +537,69 @@
             }
         }
 
-        function deleteItem(index) {
-            items.splice(index, 1);
-            saveItems();
-            updateItemCount();
-            displayItemList();
+        async function deleteItem(index) {
+            if (!confirm('Delete this item permanently from Airtable?')) {
+                return;
+            }
+
+            const item = items[index];
+            
+            try {
+                showUploadStatus('Deleting item from Airtable...', 'success');
+
+                const response = await fetch(`${AIRTABLE_CONFIG.API_URL}${AIRTABLE_CONFIG.BASE_ID}/${AIRTABLE_CONFIG.TABLE_ID}/${item.id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${AIRTABLE_CONFIG.API_KEY}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete from Airtable');
+                }
+
+                items.splice(index, 1);
+                updateItemCount();
+                displayItemList();
+                showUploadStatus('Item deleted successfully!', 'success');
+            } catch (error) {
+                console.error('Delete failed:', error);
+                showUploadStatus('Failed to delete item: ' + error.message, 'error');
+            }
         }
 
-        function editItem(index) {
+        async function editItem(index) {
             const item = items[index];
             const newLink = prompt('Edit shopping link (leave empty to remove):', item.link || '');
             
-            if (newLink !== null) {
+            if (newLink === null) return; // User cancelled
+
+            try {
+                showUploadStatus('Updating item in Airtable...', 'success');
+
+                const response = await fetch(`${AIRTABLE_CONFIG.API_URL}${AIRTABLE_CONFIG.BASE_ID}/${AIRTABLE_CONFIG.TABLE_ID}/${item.id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${AIRTABLE_CONFIG.API_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fields: {
+                            links: newLink.trim() || ''
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update Airtable');
+                }
+
                 items[index].link = newLink.trim() || null;
-                saveItems();
                 displayItemList();
-                showUploadStatus('Link updated!', 'success');
+                showUploadStatus('Link updated successfully!', 'success');
+            } catch (error) {
+                console.error('Update failed:', error);
+                showUploadStatus('Failed to update item: ' + error.message, 'error');
             }
         }
 
