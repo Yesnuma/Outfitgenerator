@@ -21,6 +21,7 @@
             font-family: Arial, sans-serif;
         }
 
+        /* Use the star background pattern as pseudo-element */
         body::before {
             content: "";
             position: fixed;
@@ -75,8 +76,8 @@
 
         .canvas-container {
             background-color: white;
-            width: 480px;
-            height: 600px;
+            width: 360px;
+            height: 450px;
             margin-bottom: 30px;
             display: flex;
             align-items: center;
@@ -135,6 +136,7 @@
             margin: 5px;
         }
 
+        /* Hidden admin elements */
         .admin-btn {
             position: fixed;
             top: 10px;
@@ -202,11 +204,6 @@
             background: #007AFF !important;
         }
 
-        .clear-data-btn {
-            background: #ff4444 !important;
-            margin-top: 10px;
-        }
-
         .item-card {
             background: white;
             border: 1px solid #ddd;
@@ -250,25 +247,6 @@
             background: #ff4444 !important;
         }
 
-        .upload-status {
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-
-        .upload-status.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .upload-status.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
         @media (max-width: 480px) {
             .letter-block {
                 width: 36px;
@@ -277,13 +255,14 @@
             }
             
             .canvas-container {
-                width: 320px;
-                height: 400px;
+                width: 300px;
+                height: 375px;
             }
         }
     </style>
 </head>
 <body>
+    <!-- Hidden admin button - only appears after secret clicks -->
     <button class="admin-btn" id="adminBtn" onclick="toggleAdmin()">Admin</button>
 
     <div class="container">
@@ -309,9 +288,10 @@
             </div>
         </div>
 
+        <!-- Hidden admin panel -->
         <div class="admin-panel" id="adminPanel">
             <h3>Add Item</h3>
-            <input type="file" id="fileInput" accept="image/*">
+            <input type="file" id="fileInput" accept="image/*" placeholder="Select image">
             <select id="categoryInput">
                 <option value="">Select Category</option>
                 <option value="bags">Bags</option>
@@ -322,16 +302,14 @@
                 <option value="shoes">Shoes</option>
                 <option value="boots">Boots</option>
             </select>
-            <input type="url" id="linkInput" placeholder="Shopping link (optional)">
-            <div id="uploadStatus" class="upload-status" style="display: none;"></div>
+            <input type="url" id="linkInput" placeholder="Shopping link (eBay, Depop, etc.) - Optional">
             <button onclick="addItem()">Add Item</button>
-            <p>Items: <span id="itemCount">0</span></p>
+            <p>Items saved: <span id="itemCount">0</span></p>
             
             <hr style="margin: 20px 0; border: 1px solid #ccc;">
             
             <h3>Manage Items</h3>
             <button class="view-items-btn" onclick="showItemList()">View All Items</button>
-            <button class="clear-data-btn" onclick="clearAllData()">Clear All Data</button>
             <div id="itemList" style="display: none; max-height: 300px; overflow-y: auto; margin-top: 10px;"></div>
         </div>
 
@@ -349,78 +327,31 @@
         let clickCount = 0;
         let lastClickTime = 0;
 
-        // Simple storage functions using localStorage
-        function saveItems() {
-            try {
-                const itemsToSave = [];
-                for (let i = 0; i < items.length; i++) {
-                    const item = items[i];
-                    itemsToSave.push({
-                        category: String(item.category || ''),
-                        url: String(item.url || ''),
-                        link: item.link ? String(item.link) : null,
-                        id: Number(item.id) || Date.now()
-                    });
-                }
-                localStorage.setItem('outfitItems', JSON.stringify(itemsToSave));
-                return true;
-            } catch (error) {
-                console.error('Save failed:', error);
-                return false;
-            }
-        }
-
+        // Load items from localStorage on page load
         function loadItems() {
-            try {
-                const saved = localStorage.getItem('outfitItems');
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    if (Array.isArray(parsed)) {
-                        items = parsed;
-                        updateItemCount();
-                        return true;
-                    }
-                }
-            } catch (error) {
-                console.error('Load failed:', error);
+            const savedItems = localStorage.getItem('outfitGeneratorItems');
+            if (savedItems) {
+                items = JSON.parse(savedItems);
+                updateItemCount();
             }
-            items = [];
-            return false;
         }
 
-        // Load items when page loads
-        window.addEventListener('load', loadItems);
-
-        function clearAllData() {
-            items = [];
-            updateItemCount();
-            displayItemList();
-            try {
-                localStorage.removeItem('outfitItems');
-            } catch (error) {
-                console.error('Clear failed:', error);
-            }
-            showUploadStatus('All data cleared.', 'success');
+        // Save items to localStorage
+        function saveItems() {
+            localStorage.setItem('outfitGeneratorItems', JSON.stringify(items));
         }
 
         function updateItemCount() {
             document.getElementById('itemCount').textContent = items.length;
         }
 
-        function showUploadStatus(message, type) {
-            const statusDiv = document.getElementById('uploadStatus');
-            statusDiv.textContent = message;
-            statusDiv.className = 'upload-status ' + type;
-            statusDiv.style.display = 'block';
-            
-            setTimeout(function() {
-                statusDiv.style.display = 'none';
-            }, 5000);
-        }
+        // Load items when page loads
+        window.addEventListener('load', loadItems);
 
         function secretClick() {
             const now = Date.now();
             
+            // Reset if more than 2 seconds between clicks
             if (now - lastClickTime > 2000) {
                 clickCount = 0;
             }
@@ -430,7 +361,7 @@
             
             if (clickCount >= 5) {
                 document.getElementById('adminBtn').classList.add('show');
-                clickCount = 0;
+                clickCount = 0; // Reset
             }
         }
 
@@ -448,50 +379,63 @@
         }
 
         function addItem() {
-            const fileInput = document.getElementById('fileInput');
-            const categoryInput = document.getElementById('categoryInput');
-            const linkInput = document.getElementById('linkInput');
-            
-            const file = fileInput.files[0];
-            const category = categoryInput.value;
-            const link = linkInput.value.trim();
+            const file = document.getElementById('fileInput').files[0];
+            const category = document.getElementById('categoryInput').value;
+            const link = document.getElementById('linkInput').value.trim();
             
             if (!file || !category) {
-                showUploadStatus('Please select both a file and category', 'error');
+                alert('Please select both a file and category');
                 return;
             }
 
-            if (link && !link.startsWith('http')) {
-                showUploadStatus('Please enter a valid URL starting with http', 'error');
+            // Validate URL if provided
+            if (link && !isValidURL(link)) {
+                alert('Please enter a valid URL (must start with http:// or https://)');
                 return;
             }
 
-            // Convert file to data URL for local storage
             const reader = new FileReader();
             reader.onload = function(e) {
-                const newItem = {
-                    category: category,
-                    url: e.target.result, // Data URL for local storage
-                    link: link || null,
-                    id: Date.now()
-                };
-                
-                items.push(newItem);
-                saveItems();
-                updateItemCount();
-                
-                fileInput.value = '';
-                categoryInput.value = '';
-                linkInput.value = '';
-                
-                if (document.getElementById('itemList').style.display !== 'none') {
-                    displayItemList();
+                try {
+                    const newItem = {
+                        category: category,
+                        url: e.target.result,
+                        link: link || null,
+                        id: Date.now()
+                    };
+                    
+                    items.push(newItem);
+                    updateItemCount();
+                    
+                    // Clear form
+                    document.getElementById('fileInput').value = '';
+                    document.getElementById('categoryInput').value = '';
+                    document.getElementById('linkInput').value = '';
+                    
+                    // Save to localStorage
+                    saveItems();
+                    
+                    // Refresh item list if it's currently shown
+                    if (document.getElementById('itemList').style.display !== 'none') {
+                        displayItemList();
+                    }
+                    
+                    alert('Item added and saved successfully!');
+                } catch (error) {
+                    console.error('Error adding item:', error);
+                    alert('Error adding item. Please try again.');
                 }
-                
-                showUploadStatus('Item added successfully!', 'success');
             };
-            
             reader.readAsDataURL(file);
+        }
+
+        function isValidURL(string) {
+            try {
+                new URL(string);
+                return string.startsWith('http://') || string.startsWith('https://');
+            } catch (_) {
+                return false;
+            }
         }
 
         function showItemList() {
@@ -515,55 +459,47 @@
                 listDiv.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No items yet</p>';
             } else {
                 let html = '';
-                for (let i = 0; i < items.length; i++) {
-                    const item = items[i];
-                    html += '<div class="item-card">';
-                    html += '<img src="' + item.url + '" alt="' + item.category + '">';
-                    html += '<div class="item-info">';
-                    html += '<strong>' + item.category.charAt(0).toUpperCase() + item.category.slice(1) + '</strong><br>';
-                    if (item.link) {
-                        html += '<a href="' + item.link + '" target="_blank" style="font-size: 10px; color: #007AFF;">View Link</a>';
-                    } else {
-                        html += '<span style="font-size: 10px; color: #999;">No link</span>';
-                    }
-                    html += '</div>';
-                    html += '<div class="item-actions">';
-                    html += '<button class="edit-btn" onclick="editItem(' + i + ')">Edit</button>';
-                    html += '<button class="delete-btn" onclick="deleteItem(' + i + ')">Delete</button>';
-                    html += '</div>';
-                    html += '</div>';
-                }
+                items.forEach((item, index) => {
+                    html += `
+                        <div class="item-card" data-index="${index}">
+                            <img src="${item.url}" alt="${item.category}">
+                            <div class="item-info">
+                                <strong>${item.category.charAt(0).toUpperCase() + item.category.slice(1)}</strong><br>
+                                ${item.link ? `<a href="${item.link}" target="_blank" style="font-size: 10px; color: #007AFF;">View Link</a>` : '<span style="font-size: 10px; color: #999;">No link</span>'}
+                            </div>
+                            <div class="item-actions">
+                                <button class="edit-btn" onclick="editItem(${index})">Edit</button>
+                                <button class="delete-btn" onclick="deleteItem(${index})">Delete</button>
+                            </div>
+                        </div>
+                    `;
+                });
                 listDiv.innerHTML = html;
             }
         }
 
         function deleteItem(index) {
-            if (!confirm('Delete this item permanently?')) {
-                return;
-            }
-
             items.splice(index, 1);
             updateItemCount();
-            displayItemList();
             saveItems();
-            showUploadStatus('Item deleted successfully!', 'success');
+            displayItemList();
         }
 
         function editItem(index) {
             const item = items[index];
             const newLink = prompt('Edit shopping link (leave empty to remove):', item.link || '');
             
-            if (newLink === null) return; // User cancelled
-
-            items[index].link = newLink.trim() || null;
-            displayItemList();
-            saveItems();
-            showUploadStatus('Link updated successfully!', 'success');
+            if (newLink !== null) {
+                items[index].link = newLink.trim() || null;
+                saveItems();
+                displayItemList();
+                alert('Link updated successfully!');
+            }
         }
 
         function generateOutfit() {
             if (items.length === 0) {
-                alert('No items yet! Use the admin panel to add clothing items.');
+                alert('No items yet! Use the secret admin panel to add clothing items.');
                 return;
             }
 
@@ -571,18 +507,22 @@
             canvas.innerHTML = '';
 
             const positions = {
-                tops: { top: '60px', left: '50%', transform: 'translateX(-50%)', width: '200px', height: '160px', zIndex: '3' },
-                dresses: { top: '60px', left: '50%', transform: 'translateX(-50%)', width: '200px', height: '260px', zIndex: '3' },
-                bottoms: { top: '240px', left: '50%', transform: 'translateX(-50%)', width: '180px', height: '200px', zIndex: '2' },
-                bags: { top: '160px', left: '30px', width: '130px', height: '130px', zIndex: '5' },
-                accessories: { top: '120px', right: '30px', width: '70px', height: '70px', zIndex: '4' },
-                shoes: { bottom: '60px', left: '50%', transform: 'translateX(-50%)', width: '120px', height: '90px', zIndex: '1' },
-                boots: { bottom: '60px', left: '50%', transform: 'translateX(-50%)', width: '160px', height: '120px', zIndex: '1' }
+                tops: { top: '15px', left: '50%', transform: 'translateX(-50%)', width: '160px', height: '130px', zIndex: '3' },
+                dresses: { top: '15px', left: '50%', transform: 'translateX(-50%)', width: '160px', height: '200px', zIndex: '3' },
+                bottoms: { top: '120px', left: '50%', transform: 'translateX(-50%)', width: '140px', height: '170px', zIndex: '2' },
+                bags: { top: '100px', left: '20px', width: '110px', height: '110px', zIndex: '5' },
+                accessories: { top: '80px', right: '20px', width: '50px', height: '50px', zIndex: '4' },
+                shoes: { bottom: '25px', left: '50%', transform: 'translateX(-50%)', width: '100px', height: '70px', zIndex: '1' },
+                boots: { bottom: '25px', left: '50%', transform: 'translateX(-50%)', width: '140px', height: '100px', zIndex: '1' }
             };
 
+            // Decide outfit type: dress vs separates (random choice)
             let dressGenerated = false;
-            const dressItems = items.filter(function(item) { return item.category === 'dresses'; });
+            const dressItems = items.filter(item => item.category === 'dresses');
+            const topItems = items.filter(item => item.category === 'tops');
+            const bottomItems = items.filter(item => item.category === 'bottoms');
             
+            // Only generate dress outfit if dresses exist AND random choice selects it
             if (dressItems.length > 0 && Math.random() < 0.5) {
                 const randomDress = dressItems[Math.floor(Math.random() * dressItems.length)];
                 
@@ -590,12 +530,9 @@
                 div.className = 'clothing-spot';
                 
                 const pos = positions['dresses'];
-                div.style.top = pos.top;
-                div.style.left = pos.left;
-                div.style.transform = pos.transform;
-                div.style.width = pos.width;
-                div.style.height = pos.height;
-                div.style.zIndex = pos.zIndex;
+                Object.keys(pos).forEach(style => {
+                    div.style[style] = pos[style];
+                });
                 
                 if (randomDress.link) {
                     div.classList.add('clickable');
@@ -606,18 +543,20 @@
                     div.title = 'Click to shop this item';
                 }
                 
-                div.innerHTML = '<img src="' + randomDress.url + '" alt="dresses">';
+                div.innerHTML = `<img src="${randomDress.url}" alt="dresses">`;
                 canvas.appendChild(div);
                 dressGenerated = true;
             }
 
-            const categories = ['tops', 'bottoms', 'bags', 'accessories', 'shoes', 'boots'];
-            for (let i = 0; i < categories.length; i++) {
-                const category = categories[i];
-                if (category === 'dresses') continue;
-                if ((category === 'bottoms' || category === 'tops') && dressGenerated) continue;
+            // Generate other items (skip bottoms if dress was generated, skip tops if dress was generated)
+            Object.keys(positions).forEach(category => {
+                // Skip dresses since we handled it above
+                if (category === 'dresses') return;
                 
-                const categoryItems = items.filter(function(item) { return item.category === category; });
+                // Skip bottoms and tops if a dress was generated
+                if ((category === 'bottoms' || category === 'tops') && dressGenerated) return;
+                
+                const categoryItems = items.filter(item => item.category === category);
                 if (categoryItems.length > 0) {
                     const randomItem = categoryItems[Math.floor(Math.random() * categoryItems.length)];
                     
@@ -625,14 +564,9 @@
                     div.className = 'clothing-spot';
                     
                     const pos = positions[category];
-                    div.style.top = pos.top || '';
-                    div.style.left = pos.left || '';
-                    div.style.right = pos.right || '';
-                    div.style.bottom = pos.bottom || '';
-                    div.style.transform = pos.transform || '';
-                    div.style.width = pos.width;
-                    div.style.height = pos.height;
-                    div.style.zIndex = pos.zIndex;
+                    Object.keys(pos).forEach(style => {
+                        div.style[style] = pos[style];
+                    });
                     
                     if (randomItem.link) {
                         div.classList.add('clickable');
@@ -643,18 +577,20 @@
                         div.title = 'Click to shop this item';
                     }
                     
-                    div.innerHTML = '<img src="' + randomItem.url + '" alt="' + category + '">';
+                    div.innerHTML = `<img src="${randomItem.url}" alt="${category}">`;
                     canvas.appendChild(div);
                 }
-            }
+            });
 
-            const hasShoes = items.some(function(item) { return item.category === 'shoes'; });
-            const hasBoots = items.some(function(item) { return item.category === 'boots'; });
+            // Handle footwear logic - only show one type of footwear per outfit
+            const hasShoes = items.some(item => item.category === 'shoes');
+            const hasBoots = items.some(item => item.category === 'boots');
             
             if (hasShoes && hasBoots) {
+                // If both exist, randomly choose one and hide the other
                 const showShoes = Math.random() < 0.5;
                 const hideCategory = showShoes ? 'boots' : 'shoes';
-                const hideElement = canvas.querySelector('[alt="' + hideCategory + '"]');
+                const hideElement = canvas.querySelector(`[alt="${hideCategory}"]`);
                 if (hideElement && hideElement.parentNode) {
                     hideElement.parentNode.remove();
                 }
@@ -669,7 +605,7 @@
                 return;
             }
             
-            alert('To save your outfit:\n\nPress Volume Up + Power button (iPhone)\nPress Volume Down + Power button (Android)');
+            alert('To save your outfit:\n\n📱 iPhone: Press Volume Up + Power button\n🤖 Android: Press Volume Down + Power button\n\nThis will screenshot the outfit area perfectly!');
         }
     </script>
 </body>
