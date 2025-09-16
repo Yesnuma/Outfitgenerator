@@ -277,8 +277,8 @@
             }
             
             .canvas-container {
-                width: 400px;
-                height: 500px;
+                width: 320px;
+                height: 400px;
             }
         }
     </style>
@@ -537,70 +537,28 @@
             }
         }
 
-        async function deleteItem(index) {
-            if (!confirm('Delete this item permanently from Airtable?')) {
+        function deleteItem(index) {
+            if (!confirm('Delete this item permanently?')) {
                 return;
             }
 
-            const item = items[index];
-            
-            try {
-                showUploadStatus('Deleting item from Airtable...', 'success');
-
-                const response = await fetch(`${AIRTABLE_CONFIG.API_URL}${AIRTABLE_CONFIG.BASE_ID}/${AIRTABLE_CONFIG.TABLE_ID}/${item.id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${AIRTABLE_CONFIG.API_KEY}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to delete from Airtable');
-                }
-
-                items.splice(index, 1);
-                updateItemCount();
-                displayItemList();
-                showUploadStatus('Item deleted successfully!', 'success');
-            } catch (error) {
-                console.error('Delete failed:', error);
-                showUploadStatus('Failed to delete item: ' + error.message, 'error');
-            }
+            items.splice(index, 1);
+            updateItemCount();
+            displayItemList();
+            saveItems();
+            showUploadStatus('Item deleted successfully!', 'success');
         }
 
-        async function editItem(index) {
+        function editItem(index) {
             const item = items[index];
             const newLink = prompt('Edit shopping link (leave empty to remove):', item.link || '');
             
             if (newLink === null) return; // User cancelled
 
-            try {
-                showUploadStatus('Updating item in Airtable...', 'success');
-
-                const response = await fetch(`${AIRTABLE_CONFIG.API_URL}${AIRTABLE_CONFIG.BASE_ID}/${AIRTABLE_CONFIG.TABLE_ID}/${item.id}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Authorization': `Bearer ${AIRTABLE_CONFIG.API_KEY}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        fields: {
-                            links: newLink.trim() || ''
-                        }
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to update Airtable');
-                }
-
-                items[index].link = newLink.trim() || null;
-                displayItemList();
-                showUploadStatus('Link updated successfully!', 'success');
-            } catch (error) {
-                console.error('Update failed:', error);
-                showUploadStatus('Failed to update item: ' + error.message, 'error');
-            }
+            items[index].link = newLink.trim() || null;
+            displayItemList();
+            saveItems();
+            showUploadStatus('Link updated successfully!', 'success');
         }
 
         function generateOutfit() {
@@ -613,13 +571,13 @@
             canvas.innerHTML = '';
 
             const positions = {
-                tops: { top: '15px', left: '50%', transform: 'translateX(-50%)', width: '160px', height: '130px', zIndex: '3' },
-                dresses: { top: '15px', left: '50%', transform: 'translateX(-50%)', width: '160px', height: '200px', zIndex: '3' },
-                bottoms: { top: '120px', left: '50%', transform: 'translateX(-50%)', width: '140px', height: '170px', zIndex: '2' },
-                bags: { top: '100px', left: '20px', width: '110px', height: '110px', zIndex: '5' },
-                accessories: { top: '80px', right: '20px', width: '50px', height: '50px', zIndex: '4' },
-                shoes: { bottom: '25px', left: '50%', transform: 'translateX(-50%)', width: '100px', height: '70px', zIndex: '1' },
-                boots: { bottom: '25px', left: '50%', transform: 'translateX(-50%)', width: '140px', height: '100px', zIndex: '1' }
+                tops: { top: '60px', left: '50%', transform: 'translateX(-50%)', width: '200px', height: '160px', zIndex: '3' },
+                dresses: { top: '60px', left: '50%', transform: 'translateX(-50%)', width: '200px', height: '260px', zIndex: '3' },
+                bottoms: { top: '240px', left: '50%', transform: 'translateX(-50%)', width: '180px', height: '200px', zIndex: '2' },
+                bags: { top: '160px', left: '30px', width: '130px', height: '130px', zIndex: '5' },
+                accessories: { top: '120px', right: '30px', width: '70px', height: '70px', zIndex: '4' },
+                shoes: { bottom: '60px', left: '50%', transform: 'translateX(-50%)', width: '120px', height: '90px', zIndex: '1' },
+                boots: { bottom: '60px', left: '50%', transform: 'translateX(-50%)', width: '160px', height: '120px', zIndex: '1' }
             };
 
             let dressGenerated = false;
