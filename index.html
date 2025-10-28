@@ -347,7 +347,8 @@
             <p>Category:</p>
             <select id="categorySelect">
                 <option value="tops">Tops</option>
-                <option value="dresses">Dresses</option>
+                <option value="shortdress">Short Dress</option>
+                <option value="longdress">Long Dress</option>
                 <option value="bottoms">Bottoms</option>
                 <option value="bags">Bags</option>
                 <option value="accessories">Accessories</option>
@@ -626,7 +627,8 @@
 
             const positions = {
                 tops: { top: '15px', left: '50%', transform: 'translateX(-50%)', width: '160px', height: '130px', zIndex: '3' },
-                dresses: { top: '15px', left: '50%', transform: 'translateX(-50%)', width: '160px', height: '200px', zIndex: '3' },
+                shortdress: { top: '15px', left: '50%', transform: 'translateX(-50%)', width: '160px', height: '200px', zIndex: '3' },
+                longdress: { top: '15px', left: '50%', transform: 'translateX(-50%)', width: '160px', height: '280px', zIndex: '3' },
                 bottoms: { top: '120px', left: '50%', transform: 'translateX(-50%)', width: '140px', height: '170px', zIndex: '2' },
                 bags: { top: '100px', left: '20px', width: '110px', height: '110px', zIndex: '5' },
                 accessories: { top: '80px', right: '20px', width: '50px', height: '50px', zIndex: '4' },
@@ -636,18 +638,20 @@
 
             // Decide outfit type: dress vs separates (random choice)
             let dressGenerated = false;
-            const dressItems = items.filter(item => item.category === 'dresses');
+            const shortDressItems = items.filter(item => item.category === 'shortdress');
+            const longDressItems = items.filter(item => item.category === 'longdress');
+            const allDressItems = [...shortDressItems, ...longDressItems];
             const topItems = items.filter(item => item.category === 'tops');
             const bottomItems = items.filter(item => item.category === 'bottoms');
             
             // Only generate dress outfit if dresses exist AND random choice selects it
-            if (dressItems.length > 0 && Math.random() < 0.5) {
-                const randomDress = dressItems[Math.floor(Math.random() * dressItems.length)];
+            if (allDressItems.length > 0 && Math.random() < 0.5) {
+                const randomDress = allDressItems[Math.floor(Math.random() * allDressItems.length)];
                 
                 const div = document.createElement('div');
                 div.className = 'clothing-spot';
                 
-                const pos = positions['dresses'];
+                const pos = positions[randomDress.category];
                 Object.keys(pos).forEach(style => {
                     div.style[style] = pos[style];
                 });
@@ -661,15 +665,15 @@
                     div.title = 'Click to shop this item';
                 }
                 
-                div.innerHTML = `<img src="${randomDress.url}" alt="dresses">`;
+                div.innerHTML = `<img src="${randomDress.url}" alt="${randomDress.category}">`;
                 canvas.appendChild(div);
                 dressGenerated = true;
             }
 
             // Generate other items (skip bottoms if dress was generated, skip tops if dress was generated)
             Object.keys(positions).forEach(category => {
-                // Skip dresses since we handled it above
-                if (category === 'dresses') return;
+                // Skip dress categories since we handled them above
+                if (category === 'shortdress' || category === 'longdress') return;
                 
                 // Skip bottoms and tops if a dress was generated
                 if ((category === 'bottoms' || category === 'tops') && dressGenerated) return;
