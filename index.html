@@ -197,76 +197,114 @@
         .admin-panel p {
             margin: 10px 0 5px 0;
             color: #666;
-            font-size: 14px;
+            font-size: 13px;
         }
 
-        .view-items-btn {
-            background: #007AFF !important;
+        .item-count {
+            background: #007AFF;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .item-list {
+            display: none;
+            background: white;
+            padding: 20px;
+            margin-top: 15px;
+            border-radius: 10px;
+            max-height: 400px;
+            overflow-y: auto;
         }
 
         .item-card {
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 10px;
-            margin: 5px 0;
             display: flex;
             align-items: center;
-            gap: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background: #f9f9f9;
         }
 
         .item-card img {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            border-radius: 3px;
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            margin-right: 15px;
+            border-radius: 5px;
+            background: white;
         }
 
         .item-info {
-            flex: 1;
-            font-size: 12px;
+            flex-grow: 1;
+            font-size: 13px;
         }
 
         .item-actions {
             display: flex;
+            flex-direction: column;
             gap: 5px;
         }
 
         .item-actions button {
-            padding: 5px 8px;
+            padding: 5px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
             font-size: 11px;
-            margin: 0;
-            width: auto;
         }
 
         .edit-btn {
-            background: #007AFF !important;
+            background: #007AFF;
+            color: white;
         }
 
         .delete-btn {
-            background: #ff4444 !important;
+            background: #ff4444;
+            color: white;
         }
 
-        @media (max-width: 480px) {
-            .letter-block {
-                width: 36px;
-                height: 36px;
-                font-size: 16px;
-            }
-            
+        .view-items-btn {
+            background: #666;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        @media (max-width: 500px) {
             .canvas-container {
-                width: 300px;
-                height: 375px;
+                width: 280px;
+                height: 350px;
+            }
+
+            .letter-block {
+                width: 30px;
+                height: 30px;
+                font-size: 14px;
+            }
+
+            .generate-btn {
+                font-size: 16px;
+                padding: 12px 25px;
+            }
+
+            .admin-panel {
+                max-width: 90%;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Hidden admin button - only appears after secret clicks -->
-    <button class="admin-btn" id="adminBtn" onclick="toggleAdmin()">Admin</button>
-
     <div class="container">
-        <div class="title" onclick="secretClick()">
+        <!-- Title (click 5 times to reveal admin) -->
+        <div class="title" id="title" onclick="titleClick()">
             <div class="title-row">
                 <div class="letter-block">O</div>
                 <div class="letter-block">U</div>
@@ -288,132 +326,187 @@
             </div>
         </div>
 
-        <!-- Hidden admin panel -->
+        <!-- Admin button (hidden by default) -->
+        <button class="admin-btn" id="adminBtn" onclick="toggleAdmin()">Admin Panel</button>
+
+        <!-- Canvas -->
+        <div class="canvas-container" id="outfitCanvas">
+            Click G̲e̲n̲e̲r̲a̲t̲e̲ for outfit
+        </div>
+
+        <!-- Generate and Save buttons -->
+        <button class="generate-btn" onclick="generateOutfit()">G̲e̲n̲e̲r̲a̲t̲e̲</button>
+        <button class="save-btn" onclick="saveOutfit()">Save Outfit</button>
+
+        <!-- Admin Panel -->
         <div class="admin-panel" id="adminPanel">
-            <h3>Add Item</h3>
-            <input type="file" id="fileInput" accept="image/*" placeholder="Select image">
-            <select id="categoryInput">
-                <option value="">Select Category</option>
-                <option value="bags">Bags</option>
-                <option value="accessories">Accessories</option>
+            <h3>Add New Item</h3>
+            <p>Select image:</p>
+            <input type="file" id="imageInput" accept="image/*">
+            
+            <p>Category:</p>
+            <select id="categorySelect">
                 <option value="tops">Tops</option>
                 <option value="dresses">Dresses</option>
                 <option value="bottoms">Bottoms</option>
+                <option value="bags">Bags</option>
+                <option value="accessories">Accessories</option>
                 <option value="shoes">Shoes</option>
                 <option value="boots">Boots</option>
             </select>
-            <input type="url" id="linkInput" placeholder="Shopping link (eBay, Depop, etc.) - Optional">
+            
+            <p>Shopping Link (optional):</p>
+            <input type="url" id="linkInput" placeholder="https://...">
+            
             <button onclick="addItem()">Add Item</button>
-            <p>Items saved: <span id="itemCount">0</span></p>
             
-            <hr style="margin: 20px 0; border: 1px solid #ccc;">
+            <div class="item-count" id="itemCount">0 items</div>
             
-            <h3>Manage Items</h3>
             <button class="view-items-btn" onclick="showItemList()">View All Items</button>
-            <div id="itemList" style="display: none; max-height: 300px; overflow-y: auto; margin-top: 10px;"></div>
+            
+            <div class="item-list" id="itemList"></div>
         </div>
-
-        <div class="canvas-container" id="outfitCanvas">
-            <!-- Generated outfit will appear here -->
-        </div>
-
-        <button class="generate-btn" onclick="generateOutfit()">G̾e̾n̾e̾r̾a̾t̾e̾</button>
-        
-        <button class="save-btn" onclick="saveOutfit()">Save Outfit Image</button>
     </div>
 
-    <script>
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getStorage, ref, uploadString, getDownloadURL, listAll, deleteObject } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+        import { getDatabase, ref as dbRef, set, get, push, remove, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCnS7QG5riEUY1_tT1FmXGGfwL4xsM_Z-Y",
+            authDomain: "outfit-generator-2408d.firebaseapp.com",
+            databaseURL: "https://outfit-generator-2408d-default-rtdb.firebaseio.com",
+            projectId: "outfit-generator-2408d",
+            storageBucket: "outfit-generator-2408d.firebasestorage.app",
+            messagingSenderId: "562537098967",
+            appId: "1:562537098967:web:7c91d5967a57799d74ca92",
+            measurementId: "G-E3WWTKY6QK"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const storage = getStorage(app);
+        const database = getDatabase(app);
+
+        // Global variables
         let items = [];
         let clickCount = 0;
-        let lastClickTime = 0;
+        let clickTimer = null;
 
-        // Load items from localStorage on page load
-        function loadItems() {
-            const savedItems = localStorage.getItem('outfitGeneratorItems');
-            if (savedItems) {
-                items = JSON.parse(savedItems);
-                updateItemCount();
+        // Load items from Firebase on page load
+        window.addEventListener('load', loadItems);
+
+        // Listen for real-time updates
+        const itemsRef = dbRef(database, 'items');
+        onValue(itemsRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                items = Object.keys(data).map(key => ({
+                    id: key,
+                    ...data[key]
+                }));
+            } else {
+                items = [];
             }
-        }
+            updateItemCount();
+            if (document.getElementById('itemList').style.display !== 'none') {
+                displayItemList();
+            }
+        });
 
-        // Save items to localStorage
-        function saveItems() {
-            localStorage.setItem('outfitGeneratorItems', JSON.stringify(items));
+        async function loadItems() {
+            try {
+                const snapshot = await get(itemsRef);
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    items = Object.keys(data).map(key => ({
+                        id: key,
+                        ...data[key]
+                    }));
+                } else {
+                    items = [];
+                }
+                updateItemCount();
+            } catch (error) {
+                console.error('Error loading items:', error);
+                items = [];
+            }
         }
 
         function updateItemCount() {
-            document.getElementById('itemCount').textContent = items.length;
+            const count = items.length;
+            document.getElementById('itemCount').textContent = `${count} item${count !== 1 ? 's' : ''}`;
         }
 
-        // Load items when page loads
-        window.addEventListener('load', loadItems);
-
-        function secretClick() {
-            const now = Date.now();
+        window.titleClick = function() {
+            clickCount++;
             
-            // Reset if more than 2 seconds between clicks
-            if (now - lastClickTime > 2000) {
+            clearTimeout(clickTimer);
+            
+            if (clickCount === 5) {
+                document.getElementById('adminBtn').classList.add('show');
                 clickCount = 0;
             }
             
-            clickCount++;
-            lastClickTime = now;
-            
-            if (clickCount >= 5) {
-                document.getElementById('adminBtn').classList.add('show');
-                clickCount = 0; // Reset
-            }
+            clickTimer = setTimeout(() => {
+                clickCount = 0;
+            }, 1000);
         }
 
-        function toggleAdmin() {
+        window.toggleAdmin = function() {
             const panel = document.getElementById('adminPanel');
-            const btn = document.getElementById('adminBtn');
-            
-            if (panel.classList.contains('show')) {
-                panel.classList.remove('show');
-                btn.textContent = 'Admin';
-            } else {
-                panel.classList.add('show');
-                btn.textContent = 'Hide';
-            }
+            panel.classList.toggle('show');
         }
 
-        function addItem() {
-            const file = document.getElementById('fileInput').files[0];
-            const category = document.getElementById('categoryInput').value;
-            const link = document.getElementById('linkInput').value.trim();
+        window.addItem = async function() {
+            const imageInput = document.getElementById('imageInput');
+            const categorySelect = document.getElementById('categorySelect');
+            const linkInput = document.getElementById('linkInput');
             
-            if (!file || !category) {
-                alert('Please select both a file and category');
+            if (!imageInput.files || !imageInput.files[0]) {
+                alert('Please select an image first!');
                 return;
             }
-
-            // Validate URL if provided
+            
+            const file = imageInput.files[0];
+            const category = categorySelect.value;
+            const link = linkInput.value.trim() || null;
+            
             if (link && !isValidURL(link)) {
-                alert('Please enter a valid URL (must start with http:// or https://)');
+                alert('Please enter a valid URL starting with http:// or https://');
                 return;
             }
-
+            
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 try {
-                    const newItem = {
-                        category: category,
-                        url: e.target.result,
-                        link: link || null,
-                        id: Date.now()
-                    };
+                    const imageData = e.target.result;
+                    const timestamp = Date.now();
+                    const fileName = `${category}_${timestamp}`;
                     
-                    items.push(newItem);
-                    updateItemCount();
+                    // Upload image to Firebase Storage
+                    const storageRef = ref(storage, `items/${fileName}`);
+                    await uploadString(storageRef, imageData, 'data_url');
+                    
+                    // Get download URL
+                    const imageUrl = await getDownloadURL(storageRef);
+                    
+                    // Save item metadata to Realtime Database
+                    const newItemRef = push(itemsRef);
+                    await set(newItemRef, {
+                        url: imageUrl,
+                        category: category,
+                        link: link,
+                        storagePath: `items/${fileName}`,
+                        timestamp: timestamp
+                    });
                     
                     // Clear form
-                    document.getElementById('fileInput').value = '';
-                    document.getElementById('categoryInput').value = '';
-                    document.getElementById('linkInput').value = '';
-                    
-                    // Save to localStorage
-                    saveItems();
+                    imageInput.value = '';
+                    linkInput.value = '';
                     
                     // Refresh item list if it's currently shown
                     if (document.getElementById('itemList').style.display !== 'none') {
@@ -423,7 +516,7 @@
                     alert('Item added and saved successfully!');
                 } catch (error) {
                     console.error('Error adding item:', error);
-                    alert('Error adding item. Please try again.');
+                    alert('Error adding item: ' + error.message);
                 }
             };
             reader.readAsDataURL(file);
@@ -438,7 +531,7 @@
             }
         }
 
-        function showItemList() {
+        window.showItemList = function() {
             const listDiv = document.getElementById('itemList');
             const btn = document.querySelector('.view-items-btn');
             
@@ -478,26 +571,51 @@
             }
         }
 
-        function deleteItem(index) {
-            items.splice(index, 1);
-            updateItemCount();
-            saveItems();
-            displayItemList();
+        window.deleteItem = async function(index) {
+            if (!confirm('Are you sure you want to delete this item?')) {
+                return;
+            }
+            
+            try {
+                const item = items[index];
+                
+                // Delete from storage
+                const storageRef = ref(storage, item.storagePath);
+                await deleteObject(storageRef);
+                
+                // Delete from database
+                const itemDbRef = dbRef(database, `items/${item.id}`);
+                await remove(itemDbRef);
+                
+                displayItemList();
+                alert('Item deleted successfully!');
+            } catch (error) {
+                console.error('Error deleting item:', error);
+                alert('Error deleting item: ' + error.message);
+            }
         }
 
-        function editItem(index) {
+        window.editItem = async function(index) {
             const item = items[index];
             const newLink = prompt('Edit shopping link (leave empty to remove):', item.link || '');
             
             if (newLink !== null) {
-                items[index].link = newLink.trim() || null;
-                saveItems();
-                displayItemList();
-                alert('Link updated successfully!');
+                try {
+                    const itemDbRef = dbRef(database, `items/${item.id}`);
+                    await set(itemDbRef, {
+                        ...item,
+                        link: newLink.trim() || null
+                    });
+                    displayItemList();
+                    alert('Link updated successfully!');
+                } catch (error) {
+                    console.error('Error updating item:', error);
+                    alert('Error updating item: ' + error.message);
+                }
             }
         }
 
-        function generateOutfit() {
+        window.generateOutfit = function() {
             if (items.length === 0) {
                 alert('No items yet! Use the secret admin panel to add clothing items.');
                 return;
@@ -597,7 +715,7 @@
             }
         }
 
-        function saveOutfit() {
+        window.saveOutfit = function() {
             const clothingSpots = document.querySelectorAll('.clothing-spot img');
             
             if (clothingSpots.length === 0) {
