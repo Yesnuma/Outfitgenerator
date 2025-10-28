@@ -638,7 +638,6 @@
 
             // Decide outfit type: dress vs separates (random choice)
             let dressGenerated = false;
-            let longDressGenerated = false;
             const shortDressItems = items.filter(item => item.category === 'shortdress');
             const longDressItems = items.filter(item => item.category === 'longdress');
             const allDressItems = [...shortDressItems, ...longDressItems];
@@ -669,11 +668,6 @@
                 div.innerHTML = `<img src="${randomDress.url}" alt="${randomDress.category}">`;
                 canvas.appendChild(div);
                 dressGenerated = true;
-                
-                // Track if it's a long dress for footwear layering
-                if (randomDress.category === 'longdress') {
-                    longDressGenerated = true;
-                }
             }
 
             // Generate other items (skip bottoms if dress was generated, skip tops if dress was generated)
@@ -695,12 +689,6 @@
                     Object.keys(pos).forEach(style => {
                         div.style[style] = pos[style];
                     });
-                    
-                    // If it's footwear (shoes or boots) and a long dress was generated, 
-                    // increase z-index so footwear appears on top of the dress
-                    if ((category === 'shoes' || category === 'boots') && longDressGenerated) {
-                        div.style.zIndex = '4';
-                    }
                     
                     if (randomItem.link) {
                         div.classList.add('clickable');
