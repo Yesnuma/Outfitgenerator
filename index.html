@@ -945,11 +945,16 @@
             }
             
             try {
+                // Wait a moment to ensure all images are fully rendered
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
                 // Use html2canvas to capture the outfit canvas as an image
                 const canvasElement = await html2canvas(canvas, {
                     backgroundColor: '#ffffff',
                     scale: 2, // Higher quality
-                    logging: false
+                    logging: false,
+                    useCORS: true, // Allow cross-origin images
+                    allowTaint: true
                 });
                 
                 // Convert to blob
@@ -1010,12 +1015,17 @@
             }
             
             try {
+                // Wait a moment to ensure all images are fully rendered
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
                 // Capture outfit as image
                 const canvas = document.getElementById('outfitCanvas');
                 const canvasElement = await html2canvas(canvas, {
                     backgroundColor: '#ffffff',
                     scale: 2,
-                    logging: false
+                    logging: false,
+                    useCORS: true,
+                    allowTaint: true
                 });
                 
                 canvasElement.toBlob(async (blob) => {
