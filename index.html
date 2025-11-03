@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Outfit Generator</title>
+    <!-- html2canvas library for screenshot functionality -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -127,13 +129,203 @@
         }
 
         .save-btn {
+            background-color: white;
+            border: 2px solid #000000;
+            padding: 12px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #000000;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .save-btn:hover {
+            background-color: #f8f9fa;
+            transform: translateY(-2px);
+        }
+
+        .share-btn {
+            background-color: white;
+            border: 2px solid #000000;
+            padding: 12px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #000000;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .share-btn:hover {
+            background-color: #f8f9fa;
+            transform: translateY(-2px);
+        }
+
+        .view-saved-btn {
+            background-color: white;
+            border: 2px solid #000000;
+            padding: 12px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #000000;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .view-saved-btn:hover {
+            background-color: #f8f9fa;
+            transform: translateY(-2px);
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        /* Saved Outfits Modal */
+        .saved-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .saved-modal.show {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 50px;
+        }
+
+        .saved-modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #ff4444;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        .saved-outfits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .saved-outfit-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .saved-outfit-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .saved-outfit-card img {
+            width: 100%;
+            height: 250px;
+            object-fit: contain;
+            background: white;
+        }
+
+        .saved-outfit-actions {
+            padding: 10px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .saved-outfit-actions button {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .delete-saved-btn {
+            background: #ff4444;
+            color: white;
+        }
+
+        .download-saved-btn {
+            background: #007AFF;
+            color: white;
+        }
+
+        .share-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            z-index: 1001;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .share-modal.show {
+            display: block;
+        }
+
+        .share-link-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+
+        .copy-link-btn {
+            width: 100%;
+            padding: 12px;
             background: #007AFF;
             color: white;
             border: none;
-            padding: 12px 25px;
-            border-radius: 20px;
+            border-radius: 8px;
             cursor: pointer;
-            margin: 5px;
+            font-size: 16px;
         }
 
         /* Hidden admin elements */
@@ -336,7 +528,11 @@
 
         <!-- Generate and Save buttons -->
         <button class="generate-btn" onclick="generateOutfit()">G̲e̲n̲e̲r̲a̲t̲e̲</button>
-        <button class="save-btn" onclick="saveOutfit()">Save Outfit</button>
+        <div class="button-group">
+            <button class="save-btn" onclick="saveOutfit()">💾 Save Outfit</button>
+            <button class="share-btn" onclick="shareOutfit()">🔗 Share</button>
+            <button class="view-saved-btn" onclick="viewSavedOutfits()">📂 My Saved Outfits</button>
+        </div>
 
         <!-- Admin Panel -->
         <div class="admin-panel" id="adminPanel">
@@ -350,6 +546,7 @@
                 <option value="shortdress">Short Dress</option>
                 <option value="longdress">Long Dress</option>
                 <option value="bottoms">Bottoms</option>
+                <option value="shortbottoms">Short Bottoms</option>
                 <option value="bags">Bags</option>
                 <option value="accessories">Accessories</option>
                 <option value="shoes">Shoes</option>
@@ -366,6 +563,26 @@
             <button class="view-items-btn" onclick="showItemList()">View All Items</button>
             
             <div class="item-list" id="itemList"></div>
+        </div>
+
+        <!-- Saved Outfits Modal -->
+        <div class="saved-modal" id="savedModal">
+            <div class="saved-modal-content">
+                <button class="close-modal" onclick="closeSavedModal()">×</button>
+                <h2 style="margin-bottom: 20px;">My Saved Outfits</h2>
+                <div class="saved-outfits-grid" id="savedOutfitsGrid">
+                    <p style="text-align: center; color: #666;">No saved outfits yet!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Share Modal -->
+        <div class="share-modal" id="shareModal">
+            <h3 style="margin-bottom: 15px;">Share This Outfit</h3>
+            <p style="color: #666; font-size: 14px;">Copy this link to share:</p>
+            <input type="text" class="share-link-input" id="shareLinkInput" readonly>
+            <button class="copy-link-btn" onclick="copyShareLink()">Copy Link</button>
+            <button class="close-modal" onclick="closeShareModal()" style="position: absolute; top: 10px; right: 10px;">×</button>
         </div>
     </div>
 
@@ -630,23 +847,36 @@
                 shortdress: { top: '3.33%', left: '50%', transform: 'translateX(-50%)', width: '55%', height: '55%', zIndex: '3' },
                 longdress: { top: '3.33%', left: '50%', transform: 'translateX(-50%)', width: '55%', height: '75%', zIndex: '3' },
                 bottoms: { top: '30%', left: '50%', transform: 'translateX(-50%)', width: '50%', height: '50%', zIndex: '2' },
+                shortbottoms: { top: '30%', left: '50%', transform: 'translateX(-50%)', width: '50%', height: '35%', zIndex: '2' },
                 bags: { top: '22.22%', left: '5.56%', width: '38%', height: '30%', zIndex: '5' },
                 accessories: { top: '17.78%', right: '5.56%', width: '18%', height: '14%', zIndex: '4' },
                 shoes: { bottom: '5.56%', left: '50%', transform: 'translateX(-50%)', width: '35%', height: '20%', zIndex: '1' },
                 boots: { bottom: '5.56%', left: '50%', transform: 'translateX(-50%)', width: '48%', height: '28%', zIndex: '1' }
             };
 
+            // Improved random shuffle function
+            function shuffleArray(array) {
+                const shuffled = [...array];
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+                return shuffled;
+            }
+
             // Decide outfit type: dress vs separates (random choice)
             let dressGenerated = false;
             const shortDressItems = items.filter(item => item.category === 'shortdress');
             const longDressItems = items.filter(item => item.category === 'longdress');
-            const allDressItems = [...shortDressItems, ...longDressItems];
-            const topItems = items.filter(item => item.category === 'tops');
-            const bottomItems = items.filter(item => item.category === 'bottoms');
+            const allDressItems = shuffleArray([...shortDressItems, ...longDressItems]);
+            const topItems = shuffleArray(items.filter(item => item.category === 'tops'));
+            const bottomItems = shuffleArray(items.filter(item => item.category === 'bottoms'));
+            const shortBottomItems = shuffleArray(items.filter(item => item.category === 'shortbottoms'));
+            const allBottomItems = shuffleArray([...bottomItems, ...shortBottomItems]);
             
             // Only generate dress outfit if dresses exist AND random choice selects it
             if (allDressItems.length > 0 && Math.random() < 0.5) {
-                const randomDress = allDressItems[Math.floor(Math.random() * allDressItems.length)];
+                const randomDress = allDressItems[0]; // Take first from shuffled array
                 
                 const div = document.createElement('div');
                 div.className = 'clothing-spot';
@@ -675,17 +905,26 @@
                 // Skip dress categories since we handled them above
                 if (category === 'shortdress' || category === 'longdress') return;
                 
-                // Skip bottoms and tops if a dress was generated
-                if ((category === 'bottoms' || category === 'tops') && dressGenerated) return;
+                // Skip bottoms/shortbottoms and tops if a dress was generated
+                if ((category === 'bottoms' || category === 'shortbottoms' || category === 'tops') && dressGenerated) return;
                 
-                const categoryItems = items.filter(item => item.category === category);
+                // For bottoms, combine both bottoms and shortbottoms into one pool
+                let categoryItems;
+                if (category === 'bottoms') {
+                    categoryItems = allBottomItems;
+                } else if (category === 'shortbottoms') {
+                    return; // Skip shortbottoms since we handle it with bottoms
+                } else {
+                    categoryItems = shuffleArray(items.filter(item => item.category === category));
+                }
+                
                 if (categoryItems.length > 0) {
-                    const randomItem = categoryItems[Math.floor(Math.random() * categoryItems.length)];
+                    const randomItem = categoryItems[0]; // Take first from shuffled array
                     
                     const div = document.createElement('div');
                     div.className = 'clothing-spot';
                     
-                    const pos = positions[category];
+                    const pos = positions[randomItem.category];
                     Object.keys(pos).forEach(style => {
                         div.style[style] = pos[style];
                     });
@@ -705,10 +944,10 @@
             });
 
             // Handle footwear logic - only show one type of footwear per outfit
-            const hasShoes = items.some(item => item.category === 'shoes');
-            const hasBoots = items.some(item => item.category === 'boots');
+            const shoeItems = shuffleArray(items.filter(item => item.category === 'shoes'));
+            const bootItems = shuffleArray(items.filter(item => item.category === 'boots'));
             
-            if (hasShoes && hasBoots) {
+            if (shoeItems.length > 0 && bootItems.length > 0) {
                 // If both exist, randomly choose one and hide the other
                 const showShoes = Math.random() < 0.5;
                 const hideCategory = showShoes ? 'boots' : 'shoes';
@@ -719,15 +958,249 @@
             }
         }
 
-        window.saveOutfit = function() {
-            const clothingSpots = document.querySelectorAll('.clothing-spot img');
+        window.saveOutfit = async function() {
+            const canvas = document.getElementById('outfitCanvas');
+            const clothingSpots = canvas.querySelectorAll('.clothing-spot img');
             
             if (clothingSpots.length === 0) {
                 alert('Generate an outfit first, then save!');
                 return;
             }
             
-            alert('To save your outfit:\n\n📱 iPhone: Press Volume Up + Power button\n🤖 Android: Press Volume Down + Power button\n\nThis will screenshot the outfit area perfectly!');
+            try {
+                // Wait a moment to ensure all images are fully rendered
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Use html2canvas to capture the outfit canvas as an image
+                const canvasElement = await html2canvas(canvas, {
+                    backgroundColor: '#ffffff',
+                    scale: 2, // Higher quality
+                    logging: false,
+                    useCORS: true, // Allow cross-origin images
+                    allowTaint: true
+                });
+                
+                // Convert to blob
+                canvasElement.toBlob(async (blob) => {
+                    // Download the image
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `outfit-${Date.now()}.png`;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                    
+                    // Also save to Firebase for "My Saved Outfits"
+                    const reader = new FileReader();
+                    reader.onload = async function(e) {
+                        try {
+                            const imageData = e.target.result;
+                            const timestamp = Date.now();
+                            
+                            // Upload to Firebase Storage
+                            const storageRef = ref(storage, `saved-outfits/${timestamp}`);
+                            await uploadString(storageRef, imageData, 'data_url');
+                            
+                            // Get download URL
+                            const imageUrl = await getDownloadURL(storageRef);
+                            
+                            // Save to database
+                            const savedOutfitsRef = dbRef(database, 'saved-outfits');
+                            const newSavedRef = push(savedOutfitsRef);
+                            await set(newSavedRef, {
+                                imageUrl: imageUrl,
+                                storagePath: `saved-outfits/${timestamp}`,
+                                timestamp: timestamp
+                            });
+                            
+                            alert('✅ Outfit saved and downloaded!');
+                        } catch (error) {
+                            console.error('Error saving to Firebase:', error);
+                            // Still downloaded, so just notify
+                            alert('Outfit downloaded! (Cloud save failed)');
+                        }
+                    };
+                    reader.readAsDataURL(blob);
+                }, 'image/png');
+                
+            } catch (error) {
+                console.error('Error capturing outfit:', error);
+                alert('Error saving outfit. Please try again!');
+            }
+        }
+
+        window.shareOutfit = async function() {
+            const clothingSpots = document.querySelectorAll('.clothing-spot img');
+            
+            if (clothingSpots.length === 0) {
+                alert('Generate an outfit first to share!');
+                return;
+            }
+            
+            try {
+                // Wait a moment to ensure all images are fully rendered
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Capture outfit as image
+                const canvas = document.getElementById('outfitCanvas');
+                const canvasElement = await html2canvas(canvas, {
+                    backgroundColor: '#ffffff',
+                    scale: 2,
+                    logging: false,
+                    useCORS: true,
+                    allowTaint: true
+                });
+                
+                canvasElement.toBlob(async (blob) => {
+                    const timestamp = Date.now();
+                    const reader = new FileReader();
+                    reader.onload = async function(e) {
+                        try {
+                            const imageData = e.target.result;
+                            
+                            // Upload to Firebase Storage
+                            const storageRef = ref(storage, `shared-outfits/${timestamp}`);
+                            await uploadString(storageRef, imageData, 'data_url');
+                            
+                            // Get download URL
+                            const imageUrl = await getDownloadURL(storageRef);
+                            
+                            // Save to database with share ID
+                            const sharedOutfitsRef = dbRef(database, 'shared-outfits');
+                            const newSharedRef = push(sharedOutfitsRef);
+                            const shareId = newSharedRef.key;
+                            
+                            await set(newSharedRef, {
+                                imageUrl: imageUrl,
+                                storagePath: `shared-outfits/${timestamp}`,
+                                timestamp: timestamp,
+                                shareId: shareId
+                            });
+                            
+                            // Create shareable link
+                            const shareUrl = `${window.location.origin}${window.location.pathname}?outfit=${shareId}`;
+                            
+                            // Show share modal
+                            document.getElementById('shareLinkInput').value = shareUrl;
+                            document.getElementById('shareModal').classList.add('show');
+                            
+                        } catch (error) {
+                            console.error('Error sharing outfit:', error);
+                            alert('Error creating share link. Please try again!');
+                        }
+                    };
+                    reader.readAsDataURL(blob);
+                }, 'image/png');
+                
+            } catch (error) {
+                console.error('Error capturing outfit:', error);
+                alert('Error sharing outfit. Please try again!');
+            }
+        }
+
+        window.copyShareLink = function() {
+            const input = document.getElementById('shareLinkInput');
+            input.select();
+            document.execCommand('copy');
+            alert('✅ Link copied! Share it with friends!');
+        }
+
+        window.closeShareModal = function() {
+            document.getElementById('shareModal').classList.remove('show');
+        }
+
+        window.viewSavedOutfits = async function() {
+            const modal = document.getElementById('savedModal');
+            const grid = document.getElementById('savedOutfitsGrid');
+            
+            modal.classList.add('show');
+            grid.innerHTML = '<p style="text-align: center; color: #666;">Loading...</p>';
+            
+            try {
+                const savedRef = dbRef(database, 'saved-outfits');
+                const snapshot = await get(savedRef);
+                
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    const savedOutfits = Object.keys(data).map(key => ({
+                        id: key,
+                        ...data[key]
+                    }));
+                    
+                    // Sort by timestamp (newest first)
+                    savedOutfits.sort((a, b) => b.timestamp - a.timestamp);
+                    
+                    grid.innerHTML = savedOutfits.map(outfit => `
+                        <div class="saved-outfit-card">
+                            <img src="${outfit.imageUrl}" alt="Saved Outfit">
+                            <div class="saved-outfit-actions">
+                                <button class="download-saved-btn" onclick="downloadSavedOutfit('${outfit.imageUrl}', ${outfit.timestamp})">Download</button>
+                                <button class="delete-saved-btn" onclick="deleteSavedOutfit('${outfit.id}', '${outfit.storagePath}')">Delete</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    grid.innerHTML = '<p style="text-align: center; color: #666; grid-column: 1/-1;">No saved outfits yet! Generate and save some outfits to see them here.</p>';
+                }
+            } catch (error) {
+                console.error('Error loading saved outfits:', error);
+                grid.innerHTML = '<p style="text-align: center; color: #ff4444; grid-column: 1/-1;">Error loading saved outfits.</p>';
+            }
+        }
+
+        window.closeSavedModal = function() {
+            document.getElementById('savedModal').classList.remove('show');
+        }
+
+        window.downloadSavedOutfit = function(imageUrl, timestamp) {
+            const link = document.createElement('a');
+            link.href = imageUrl;
+            link.download = `saved-outfit-${timestamp}.png`;
+            link.click();
+        }
+
+        window.deleteSavedOutfit = async function(outfitId, storagePath) {
+            if (!confirm('Delete this saved outfit?')) {
+                return;
+            }
+            
+            try {
+                // Delete from storage
+                const storageRef = ref(storage, storagePath);
+                await deleteObject(storageRef);
+                
+                // Delete from database
+                const outfitDbRef = dbRef(database, `saved-outfits/${outfitId}`);
+                await remove(outfitDbRef);
+                
+                // Refresh the grid
+                viewSavedOutfits();
+                
+            } catch (error) {
+                console.error('Error deleting saved outfit:', error);
+                alert('Error deleting outfit. Please try again!');
+            }
+        }
+
+        // Check if there's a shared outfit in URL on page load
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedOutfitId = urlParams.get('outfit');
+        
+        if (sharedOutfitId) {
+            (async () => {
+                try {
+                    const sharedRef = dbRef(database, `shared-outfits/${sharedOutfitId}`);
+                    const snapshot = await get(sharedRef);
+                    
+                    if (snapshot.exists()) {
+                        const outfit = snapshot.val();
+                        const canvas = document.getElementById('outfitCanvas');
+                        canvas.innerHTML = `<img src="${outfit.imageUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;">`;
+                    }
+                } catch (error) {
+                    console.error('Error loading shared outfit:', error);
+                }
+            })();
         }
     </script>
 </body>
